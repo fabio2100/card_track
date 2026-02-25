@@ -11,8 +11,12 @@ import {
   TextField,
   Alert,
   Typography,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
+  Button,
 } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -29,6 +33,9 @@ export default function Home() {
   const [selectedCard, setSelectedCard] = useState<number | ''>('');
   const [date, setDate] = useState<Dayjs | null>(dayjs());
   const [mount, setMount] = useState<string>('');
+  const [paymentType, setPaymentType] = useState<'single' | 'installments'>('single');
+  const [installmentsCount, setInstallmentsCount] = useState<string>('3');
+  const [amountType, setAmountType] = useState<'total' | 'installment'>('total');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -60,26 +67,45 @@ export default function Home() {
     setAlert(null);
 
     try {
-      const response = await fetch('/api/payments', {
+      let endpoint = '/api/payments';
+      let body: any = {
+        card_id: selectedCard,
+        mount: parseInt(mount),
+        date: date.toISOString(),
+      };
+
+      // If installments, use different endpoint and add extra fields
+      if (paymentType === 'installments') {
+        endpoint = '/api/payments_cuotas';
+        body = {
+          ...body,
+          installments_count: parseInt(installmentsCount),
+          amount_type: amountType,
+        };
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          card_id: selectedCard,
-          mount: parseInt(mount),
-          date: date.toISOString(),
-        }),
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setAlert({ type: 'success', message: 'Pago registrado exitosamente' });
+        const message = paymentType === 'installments' 
+          ? `${data.count} cuotas registradas exitosamente`
+          : 'Pago registrado exitosamente';
+        setAlert({ type: 'success', message });
         // Reset form
         setSelectedCard('');
         setMount('');
         setDate(dayjs());
+        setPaymentType('single');
+        setInstallmentsCount('3');
+        setAmountType('total');
       } else {
         setAlert({ type: 'error', message: data.error || 'Error al registrar el pago' });
       }
@@ -136,17 +162,55 @@ export default function Home() {
             />
           </LocalizationProvider>
 
+          <FormControl component="fieldset" sx={{ mb: 2 }}>
+            <FormLabel component="legend">Tipo de Pago</FormLabel>
+            <RadioGroup
+              row
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value as 'single' | 'installments')}
+            >
+              <FormControlLabel value="single" control={<Radio />} label="1 pago" />
+              <FormControlLabel value="installments" control={<Radio />} label="Cuotas" />
+            </RadioGroup>
+          </FormControl>
+
+          {paymentType === 'installments' && (
+            <>
+              <TextField
+                fullWidth
+                type="number"
+                label="Número de cuotas"
+                value={installmentsCount}
+                onChange={(e) => setInstallmentsCount(e.target.value)}
+                sx={{ mb: 2 }}
+                inputProps={{ min: 1 }}
+              />
+
+              <FormControl component="fieldset" sx={{ mb: 2 }}>
+                <FormLabel component="legend">Tipo de Monto</FormLabel>
+                <RadioGroup
+                  row
+                  value={amountType}
+                  onChange={(e) => setAmountType(e.target.value as 'total' | 'installment')}
+                >
+                  <FormControlLabel value="total" control={<Radio />} label="Monto total" />
+                  <FormControlLabel value="installment" control={<Radio />} label="Monto de cuota" />
+                </RadioGroup>
+              </FormControl>
+            </>
+          )}
+
           <TextField
             fullWidth
             type="number"
-            label="Monto"
+            label={paymentType === 'installments' && amountType === 'installment' ? 'Monto de cuota' : 'Monto'}
             value={mount}
             onChange={(e) => setMount(e.target.value)}
             sx={{ mb: 3 }}
             inputProps={{ min: 0 }}
           />
 
-          <LoadingButton
+          <Button
             type="submit"
             variant="contained"
             fullWidth
@@ -154,7 +218,7 @@ export default function Home() {
             size="large"
           >
             Registrar Pago
-          </LoadingButton>
+          </Button>
         </Box>
       </Box>
     </Container>
