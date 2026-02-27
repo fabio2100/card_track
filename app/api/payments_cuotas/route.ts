@@ -39,13 +39,8 @@ export async function POST(request: Request) {
       installmentDate.setMonth(startDate.getMonth() + i);
       installmentDate.setDate(dayOfMonth);
 
-      // For the last installment with 'total' type, adjust to avoid rounding errors
-      const installmentMount = (amount_type === 'total' && i === installments_count - 1)
-        ? mount - (mountPerInstallment * (installments_count - 1))
-        : mountPerInstallment;
-
       payments.push({
-        mount: installmentMount,
+        mount: mountPerInstallment,
         card_id,
         created_at: installmentDate.toISOString(),
         installment: `${i + 1}/${installments_count}`,
