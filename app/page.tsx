@@ -17,6 +17,7 @@ import {
   FormLabel,
   Button,
 } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -29,6 +30,7 @@ interface Card {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCard, setSelectedCard] = useState<number | ''>('');
   const [date, setDate] = useState<Dayjs | null>(dayjs());
@@ -232,6 +234,16 @@ export default function Home() {
             size="large"
           >
             Registrar Pago
+          </Button>
+
+          <Button
+            variant="outlined"
+            fullWidth
+            size="large"
+            sx={{ mt: 2 }}
+            onClick={() => router.push('/dashboard')}
+          >
+            Dashboard
           </Button>
         </Box>
       </Box>
