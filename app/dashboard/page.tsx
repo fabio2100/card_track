@@ -7,6 +7,9 @@ import { useRouter } from 'next/navigation';
 
 interface Cycle {
   name: string;
+  start_date: string;
+  end_date: string;
+  total_ingresos: number;
 }
 
 export default function Dashboard() {
@@ -16,7 +19,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchCycles = async () => {
       try {
-        const response = await fetch('/api/cycles');
+        const response = await fetch('/api/cycles_ingresos');
         const data = await response.json();
         if (data.success) {
           setCycles(data.data);
@@ -46,7 +49,10 @@ export default function Dashboard() {
         <List dense>
           {cycles.map((cycle, index) => (
             <ListItem key={index} disableGutters>
-              <ListItemText primary={cycle.name} />
+              <ListItemText
+                primary={cycle.name}
+                secondary={`Ingresos: ${cycle.total_ingresos}`}
+              />
             </ListItem>
           ))}
         </List>
