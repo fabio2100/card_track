@@ -241,6 +241,16 @@ export default function Home() {
             fullWidth
             size="large"
             sx={{ mt: 2 }}
+            onClick={() => router.push('/ingresos')}
+          >
+            Agregar Ingreso
+          </Button>
+
+          <Button
+            variant="outlined"
+            fullWidth
+            size="large"
+            sx={{ mt: 2 }}
             onClick={() => router.push('/dashboard')}
           >
             Dashboard
