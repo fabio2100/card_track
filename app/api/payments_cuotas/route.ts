@@ -4,7 +4,7 @@ import { getClient } from '@/lib/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { card_id, date, installments_count, amount_type, mount } = body;
+    const { card_id, date, installments_count, amount_type, mount, name } = body;
 
     // Validate required fields
     if (!card_id || !date || !installments_count || !mount || !amount_type) {
@@ -48,7 +48,8 @@ export async function POST(request: Request) {
         mount: installmentMount,
         card_id,
         created_at: installmentDate.toISOString(),
-        installment: `${i + 1}/${installments_count}`
+        installment: `${i + 1}/${installments_count}`,
+        name: name || null
       });
     }
 
@@ -60,8 +61,8 @@ export async function POST(request: Request) {
       const insertedPayments = [];
       for (const payment of payments) {
         const result = await client.query(
-          'INSERT INTO payments (mount, card_id, created_at, installment) VALUES ($1, $2, $3, $4) RETURNING *',
-          [payment.mount, payment.card_id, payment.created_at, payment.installment]
+          'INSERT INTO payments (mount, card_id, created_at, installment, name) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [payment.mount, payment.card_id, payment.created_at, payment.installment, payment.name]
         );
         insertedPayments.push(result.rows[0]);
       }

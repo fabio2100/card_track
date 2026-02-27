@@ -36,6 +36,7 @@ export default function Home() {
   const [paymentType, setPaymentType] = useState<'single' | 'installments'>('single');
   const [installmentsCount, setInstallmentsCount] = useState<string>('3');
   const [amountType, setAmountType] = useState<'total' | 'installment'>('total');
+  const [name, setName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -72,6 +73,7 @@ export default function Home() {
         card_id: selectedCard,
         mount: parseInt(mount),
         date: date.toISOString(),
+        name,
       };
 
       // If installments, use different endpoint and add extra fields
@@ -100,6 +102,7 @@ export default function Home() {
           : 'Pago registrado exitosamente';
         setAlert({ type: 'success', message });
         // Reset form
+        setName('');
         setSelectedCard('');
         setMount('');
         setDate(dayjs());
@@ -130,6 +133,17 @@ export default function Home() {
         )}
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+          <TextField
+            fullWidth
+            type="text"
+            label="Descripción"
+            placeholder="Descripción"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            inputProps={{ maxLength: 32 }}
+            sx={{ mb: 2 }}
+          />
+
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel id="card-label">Tarjeta</InputLabel>
             <Select

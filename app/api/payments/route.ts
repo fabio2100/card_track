@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { mount, card_id, date } = body;
+    const { mount, card_id, date, name } = body;
 
     // Validate required fields
     if (!mount || !card_id) {
@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     const created_at = date || new Date().toISOString();
 
     const result = await query(
-      'INSERT INTO payments (mount, card_id, created_at) VALUES ($1, $2, $3) RETURNING *',
-      [mount, card_id, created_at]
+      'INSERT INTO payments (mount, card_id, created_at, name) VALUES ($1, $2, $3, $4) RETURNING *',
+      [mount, card_id, created_at, name || null]
     );
 
     return NextResponse.json({
