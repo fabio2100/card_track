@@ -5,6 +5,7 @@ import {
   Box,
   Container,
   IconButton,
+  InputAdornment,
   TextField,
   Alert,
   Typography,
@@ -43,7 +44,7 @@ export default function Ingresos() {
         body: JSON.stringify({
           name: nombre,
           created_at: fecha.toISOString(),
-          monto: parseInt(monto),
+          monto: parseInt(monto.replace(/,/g, '')),
         }),
       });
 
@@ -110,12 +111,17 @@ export default function Ingresos() {
 
           <TextField
             fullWidth
-            type="number"
+            type="text"
             label="Monto"
             value={monto}
-            onChange={(e) => setMonto(e.target.value)}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\D/g, '');
+              setMonto(raw ? parseInt(raw).toLocaleString('en-US') : '');
+            }}
             sx={{ mb: 3 }}
-            inputProps={{ min: 0 }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+            }}
           />
 
           <Button

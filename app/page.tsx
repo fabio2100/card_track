@@ -6,6 +6,7 @@ import {
   Container,
   FormControl,
   InputLabel,
+  InputAdornment,
   Select,
   MenuItem,
   TextField,
@@ -73,7 +74,8 @@ export default function Home() {
       let endpoint = '/api/payments';
       let body: any = {
         card_id: selectedCard,
-        mount: parseInt(mount),
+        mount: parseInt(mount.replace(/,/g, '')),
+
         date: date.toISOString(),
         name,
       };
@@ -218,12 +220,17 @@ export default function Home() {
 
           <TextField
             fullWidth
-            type="number"
+            type="text"
             label={paymentType === 'installments' && amountType === 'installment' ? 'Monto de cuota' : 'Monto'}
             value={mount}
-            onChange={(e) => setMount(e.target.value)}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\D/g, '');
+              setMount(raw ? parseInt(raw).toLocaleString('en-US') : '');
+            }}
             sx={{ mb: 3 }}
-            inputProps={{ min: 0 }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+            }}
           />
 
           <Button
