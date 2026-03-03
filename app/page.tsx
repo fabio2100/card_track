@@ -258,6 +258,16 @@ export default function Home() {
             fullWidth
             size="large"
             sx={{ mt: 2 }}
+            onClick={() => router.push('/pago_tarjeta')}
+          >
+            Pago Tarjeta
+          </Button>
+
+          <Button
+            variant="outlined"
+            fullWidth
+            size="large"
+            sx={{ mt: 2 }}
             onClick={() => router.push('/dashboard')}
           >
             Dashboard
