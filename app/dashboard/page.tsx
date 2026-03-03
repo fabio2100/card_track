@@ -50,6 +50,7 @@ interface CardData {
   description: string;
   last_four: string;
   expiration_date: string | null;
+  total_payments: number;
 }
 
 export default function Dashboard() {
@@ -58,6 +59,7 @@ export default function Dashboard() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [ingresos, setIngresos] = useState<Ingreso[]>([]);
   const [totalIngresos, setTotalIngresos] = useState<number>(0);
+  const [lastSueldo, setLastSueldo] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Delete dialog
@@ -82,6 +84,7 @@ export default function Dashboard() {
           setCards(data.cards);
           setIngresos(data.ingresos);
           setTotalIngresos(data.totalIngresos);
+          setLastSueldo(data.lastSueldo ? Number(data.lastSueldo.monto) : null);
         }
       } catch (error) {
         console.error('Error fetching dashboard:', error);
@@ -180,6 +183,9 @@ export default function Dashboard() {
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                         •••• {card.last_four}
                       </Typography>
+                      <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
+                        ${Number(card.total_payments).toLocaleString('en-US')}
+                      </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Vence: {formatExpiration(card.expiration_date)}
                       </Typography>
@@ -188,6 +194,34 @@ export default function Dashboard() {
                 </Grid>
               ))}
         </Grid>
+
+        {!loading && cards.length > 0 && (() => {
+          const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
+          const salaryBase = totalIngresos > 0 ? totalIngresos : lastSueldo;
+          const pct = salaryBase && salaryBase > 0
+            ? Math.round((totalTarjetas * 100) / salaryBase)
+            : null;
+          return (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h6" component="p">
+                Total tarjetas:{' '}
+                <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
+              </Typography>
+              {pct !== null && (
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
+                  <Typography variant="h6" component="p">
+                    <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+                  </Typography>
+                  {totalIngresos === 0 && lastSueldo !== null && (
+                    <Typography variant="caption" color="text.secondary">
+                      Usando salario previo
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            </Box>
+          );
+        })()}
 
         {/* Ingresos section */}
         <Box sx={{ mt: 4 }}>
