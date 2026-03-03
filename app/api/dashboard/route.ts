@@ -1,16 +1,21 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const monthParam = searchParams.get('month'); // 'YYYY-MM'
+    // Use the 15th of the target month as reference to find the active cycle
+    const monthDate = monthParam ? `${monthParam}-15` : new Date().toISOString().slice(0, 10);
+
     const [cycleResult, cardsResult, ingresosResult, lastSueldoResult] = await Promise.all([
       query(`
         SELECT name
         FROM cycles
-        WHERE start_date <= NOW() AND end_date > NOW()
+        WHERE start_date <= $1::date AND end_date > $1::date
         ORDER BY start_date DESC
         LIMIT 1
-      `),
+      `, [monthDate]),
       query(`
         SELECT
           c.id,
@@ -21,7 +26,7 @@ export async function GET() {
         FROM cards c
         LEFT JOIN card_cycles cc
           ON cc.card_id = c.id
-          AND DATE_TRUNC('month', cc.expiration_date) = DATE_TRUNC('month', NOW())
+          AND DATE_TRUNC('month', cc.expiration_date) = DATE_TRUNC('month', $1::date)
         LEFT JOIN payments p
           ON p.card_id = c.id
           AND cc.start_date IS NOT NULL
@@ -29,13 +34,13 @@ export async function GET() {
           AND p.created_at < cc.end_date
         GROUP BY c.id, c.description, c.last_four, cc.expiration_date
         ORDER BY c.description
-      `),
+      `, [monthDate]),
       query(`
         SELECT id, created_at, name, monto
         FROM ingresos
-        WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())
+        WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', $1::date)
         ORDER BY created_at DESC
-      `),
+      `, [monthDate]),
       query(`
         SELECT monto
         FROM ingresos

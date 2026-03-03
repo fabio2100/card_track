@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -53,13 +53,29 @@ interface CardData {
   total_payments: number;
 }
 
+interface MonthData {
+  month: string; // 'YYYY-MM'
+  label: string;
+  cycleName: string | null;
+  cards: CardData[];
+  ingresos: Ingreso[];
+  totalIngresos: number;
+  lastSueldo: number | null;
+}
+
+function buildMonthLabel(month: string): string {
+  const d = new Date(`${month}-15T12:00:00`);
+  const label = d.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export default function Dashboard() {
   const router = useRouter();
-  const [cycleName, setCycleName] = useState<string | null>(null);
-  const [cards, setCards] = useState<CardData[]>([]);
-  const [ingresos, setIngresos] = useState<Ingreso[]>([]);
-  const [totalIngresos, setTotalIngresos] = useState<number>(0);
-  const [lastSueldo, setLastSueldo] = useState<number | null>(null);
+  const months = [0, 1, 2].map((offset) =>
+    dayjs().add(offset, 'month').format('YYYY-MM')
+  );
+
+  const [monthsData, setMonthsData] = useState<(MonthData | null)[]>([null, null, null]);
   const [loading, setLoading] = useState(true);
 
   // Delete dialog
@@ -73,36 +89,37 @@ export default function Dashboard() {
   const [editMonto, setEditMonto] = useState('');
   const [editLoading, setEditLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const response = await fetch('/api/dashboard');
-        const data = await response.json();
-        console.log('Dashboard data:', data);
-        if (data.success) {
-          setCycleName(data.cycle?.name ?? null);
-          setCards(data.cards);
-          setIngresos(data.ingresos);
-          setTotalIngresos(data.totalIngresos);
-          setLastSueldo(data.lastSueldo ? Number(data.lastSueldo.monto) : null);
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboard();
+  const fetchAll = useCallback(async () => {
+    try {
+      const results = await Promise.all(
+        months.map((m) => fetch(`/api/dashboard?month=${m}`).then((r) => r.json()))
+      );
+      setMonthsData(
+        results.map((data, i) =>
+          data.success
+            ? {
+                month: months[i],
+                label: buildMonthLabel(months[i]),
+                cycleName: data.cycle?.name ?? null,
+                cards: data.cards,
+                ingresos: data.ingresos,
+                totalIngresos: data.totalIngresos,
+                lastSueldo: data.lastSueldo ? Number(data.lastSueldo.monto) : null,
+              }
+            : null
+        )
+      );
+    } catch (error) {
+      console.error('Error fetching dashboard:', error);
+    } finally {
+      setLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const refreshIngresos = async () => {
-    const response = await fetch('/api/dashboard');
-    const data = await response.json();
-    if (data.success) {
-      setIngresos(data.ingresos);
-      setTotalIngresos(data.totalIngresos);
-    }
-  };
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   const openEdit = (ing: Ingreso) => {
     setEditTarget(ing);
@@ -117,7 +134,7 @@ export default function Dashboard() {
     await fetch(`/api/ingresos/${deleteTarget.id}`, { method: 'DELETE' });
     setDeleteTarget(null);
     setDeleteLoading(false);
-    await refreshIngresos();
+    await fetchAll();
   };
 
   const handleEdit = async () => {
@@ -134,7 +151,7 @@ export default function Dashboard() {
     });
     setEditTarget(null);
     setEditLoading(false);
-    await refreshIngresos();
+    await fetchAll();
   };
 
   const formatExpiration = (value: string | null) => {
@@ -146,25 +163,38 @@ export default function Dashboard() {
     return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${dayNum}`;
   };
 
-  return (
-    <>
-      <Container maxWidth="lg">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <IconButton onClick={() => router.push('/')} sx={{ mr: 1 }}>
-            <ArrowBackIcon />
-          </IconButton>
-          {loading ? (
-            <Skeleton width={220} height={48} />
-          ) : (
-            <Typography variant="h4" component="h1">
-              {cycleName ?? 'Dashboard'}
-            </Typography>
-          )}
-        </Box>
+  const renderMonth = (data: MonthData | null, monthKey: string) => {
+    const isLoading = loading || data === null;
+    const cards = data?.cards ?? [];
+    const ingresos = data?.ingresos ?? [];
+    const totalIngresos = data?.totalIngresos ?? 0;
+    const lastSueldo = data?.lastSueldo ?? null;
+    const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
+    const salaryBase = totalIngresos > 0 ? totalIngresos : lastSueldo;
+    const pct =
+      salaryBase && salaryBase > 0
+        ? Math.round((totalTarjetas * 100) / salaryBase)
+        : null;
 
+    return (
+      <Box
+        key={monthKey}
+        sx={{
+          mt: 4,
+          p: 3,
+          border: '1px solid',
+          borderColor: 'grey.400',
+          borderRadius: 2,
+        }}
+      >
+        {/* Month header */}
+        <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
+          {isLoading ? <Skeleton width={200} /> : (data?.cycleName ?? data?.label ?? buildMonthLabel(monthKey))}
+        </Typography>
+
+        {/* Cards grid */}
         <Grid container spacing={2}>
-          {loading
+          {isLoading
             ? Array.from({ length: 3 }).map((_, i) => (
                 <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
                   <Skeleton variant="rounded" height={140} />
@@ -195,43 +225,36 @@ export default function Dashboard() {
               ))}
         </Grid>
 
-        {!loading && cards.length > 0 && (() => {
-          const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
-          const salaryBase = totalIngresos > 0 ? totalIngresos : lastSueldo;
-          const pct = salaryBase && salaryBase > 0
-            ? Math.round((totalTarjetas * 100) / salaryBase)
-            : null;
-          return (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" component="p">
-                Total tarjetas:{' '}
-                <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
-              </Typography>
-              {pct !== null && (
-                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-                  <Typography variant="h6" component="p">
-                    <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+        {/* Totals summary */}
+        {!isLoading && cards.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" component="p">
+              Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
+            </Typography>
+            {pct !== null && (
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
+                <Typography variant="h6" component="p">
+                  <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+                </Typography>
+                {totalIngresos === 0 && lastSueldo !== null && (
+                  <Typography variant="caption" color="text.secondary">
+                    Usando salario previo
                   </Typography>
-                  {totalIngresos === 0 && lastSueldo !== null && (
-                    <Typography variant="caption" color="text.secondary">
-                      Usando salario previo
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            </Box>
-          );
-        })()}
+                )}
+              </Box>
+            )}
+          </Box>
+        )}
 
         {/* Ingresos section */}
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" component="h2" sx={{ mb: 0.5 }}>
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" component="h3" sx={{ mb: 0.5 }}>
             Ingresos
           </Typography>
-          {loading ? (
-            <Skeleton width={180} height={72} />
+          {isLoading ? (
+            <Skeleton width={180} height={56} />
           ) : (
-            <Typography variant="h3" component="p" sx={{ mb: 2, fontWeight: 700 }}>
+            <Typography variant="h4" component="p" sx={{ mb: 2, fontWeight: 700 }}>
               ${totalIngresos.toLocaleString('en-US')}
             </Typography>
           )}
@@ -270,7 +293,11 @@ export default function Dashboard() {
                         <IconButton size="small" onClick={() => openEdit(ing)}>
                           <EditIcon fontSize="small" />
                         </IconButton>
-                        <IconButton size="small" color="error" onClick={() => setDeleteTarget(ing)}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => setDeleteTarget(ing)}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </TableCell>
@@ -282,7 +309,25 @@ export default function Dashboard() {
           </Accordion>
         </Box>
       </Box>
-    </Container>
+    );
+  };
+
+  return (
+    <>
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, mb: 6 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <IconButton onClick={() => router.push('/')} sx={{ mr: 1 }}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h4" component="h1">
+              Dashboard
+            </Typography>
+          </Box>
+
+          {months.map((month, i) => renderMonth(monthsData[i] ?? null, month))}
+        </Box>
+      </Container>
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)}>
