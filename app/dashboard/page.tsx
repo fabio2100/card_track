@@ -46,12 +46,21 @@ interface Ingreso {
   monto: number;
 }
 
+interface Payment {
+  card_id: number;
+  created_at: string;
+  name: string | null;
+  installment: string | null;
+  mount: number;
+}
+
 interface CardData {
   id: number;
   description: string;
   last_four: string;
   expiration_date: string | null;
   total_payments: number;
+  payments: Payment[];
 }
 
 interface MonthData {
@@ -233,6 +242,49 @@ export default function Dashboard() {
                       <Typography variant="body2" color="text.secondary">
                         Vence: {formatExpiration(card.expiration_date)}
                       </Typography>
+                      {card.payments.length > 0 && (
+                        <Accordion
+                          disableGutters
+                          elevation={0}
+                          sx={{ mt: 1, '&:before': { display: 'none' }, border: 'none' }}
+                        >
+                          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 0, minHeight: 32 }}>
+                            <Typography variant="caption" color="text.secondary">
+                              Ver detalle ({card.payments.length})
+                            </Typography>
+                          </AccordionSummary>
+                          <AccordionDetails sx={{ p: 0 }}>
+                            <Table size="small">
+                              <TableHead>
+                                <TableRow>
+                                  <TableCell sx={{ py: 0.5 }}>Fecha</TableCell>
+                                  <TableCell sx={{ py: 0.5 }}>Nombre</TableCell>
+                                  <TableCell align="right" sx={{ py: 0.5 }}>Monto</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {card.payments.map((pmt, idx) => (
+                                  <TableRow key={idx}>
+                                    <TableCell sx={{ py: 0.5 }}>
+                                      {new Date(pmt.created_at).toLocaleDateString('es-AR', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: '2-digit',
+                                      })}
+                                    </TableCell>
+                                    <TableCell sx={{ py: 0.5 }}>
+                                      {[pmt.name, pmt.installment].filter(Boolean).join(' ')  || '—'}
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ py: 0.5 }}>
+                                      ${Number(pmt.mount).toLocaleString('en-US')}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </AccordionDetails>
+                        </Accordion>
+                      )}
                     </CardContent>
                   </Card>
                 </Grid>

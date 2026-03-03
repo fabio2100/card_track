@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     // Use the 15th of the target month as reference to find the active cycle
     const monthDate = monthParam ? `${monthParam}-15` : new Date().toISOString().slice(0, 10);
 
-    const [cycleResult, cardsResult, ingresosResult, lastSueldoResult] = await Promise.all([
+    const [cycleResult, cardsResult, ingresosResult, lastSueldoResult, paymentsResult] = await Promise.all([
       query(`
         SELECT name
         FROM cycles
@@ -48,6 +48,21 @@ export async function GET(request: Request) {
         ORDER BY created_at DESC
         LIMIT 1
       `),
+      query(`
+        SELECT
+          p.card_id,
+          p.created_at,
+          p.name,
+          p.installment,
+          p.mount
+        FROM payments p
+        JOIN card_cycles cc
+          ON cc.card_id = p.card_id
+          AND DATE_TRUNC('month', cc.expiration_date) = DATE_TRUNC('month', $1::date)
+          AND p.created_at >= cc.start_date
+          AND p.created_at < cc.end_date
+        ORDER BY p.card_id, p.created_at DESC
+      `, [monthDate]),
     ]);
 
     const totalIngresos = ingresosResult.rows.reduce(
@@ -57,10 +72,23 @@ export async function GET(request: Request) {
 
     const lastSueldo = lastSueldoResult.rows[0] ?? null;
 
+    // Group payments by card_id
+    const paymentsByCard: Record<number, object[]> = {};
+    for (const row of paymentsResult.rows) {
+      if (!paymentsByCard[row.card_id]) paymentsByCard[row.card_id] = [];
+      paymentsByCard[row.card_id].push(row);
+    }
+
+    // Attach payments array to each card
+    const cardsWithPayments = cardsResult.rows.map((card: { id: number }) => ({
+      ...card,
+      payments: paymentsByCard[card.id] ?? [],
+    }));
+
     return NextResponse.json({
       success: true,
       cycle: cycleResult.rows[0] ?? null,
-      cards: cardsResult.rows,
+      cards: cardsWithPayments,
       ingresos: ingresosResult.rows,
       totalIngresos,
       lastSueldo,
