@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   Grid,
   IconButton,
   InputAdornment,
@@ -78,6 +79,11 @@ export default function Dashboard() {
   const [monthsData, setMonthsData] = useState<(MonthData | null)[]>([null, null, null]);
   const [loading, setLoading] = useState(true);
 
+  // Global info
+  const [deudaTotal, setDeudaTotal] = useState<number | null>(null);
+  const [deudaEnSueldos, setDeudaEnSueldos] = useState<number | null>(null);
+  const [infoLoading, setInfoLoading] = useState(true);
+
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState<Ingreso | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -91,11 +97,19 @@ export default function Dashboard() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const results = await Promise.all(
-        months.map((m) => fetch(`/api/dashboard?month=${m}`).then((r) => r.json()))
-      );
+      const [infoRes, ...monthResults] = await Promise.all([
+        fetch('/api/info').then((r) => r.json()),
+        ...months.map((m) => fetch(`/api/dashboard?month=${m}`).then((r) => r.json())),
+      ]);
+
+      if (infoRes.success) {
+        setDeudaTotal(infoRes.deudaTotal);
+        setDeudaEnSueldos(infoRes.deudaEnSueldos);
+      }
+      setInfoLoading(false);
+
       setMonthsData(
-        results.map((data, i) =>
+        monthResults.map((data, i) =>
           data.success
             ? {
                 month: months[i],
@@ -316,13 +330,50 @@ export default function Dashboard() {
     <>
       <Container maxWidth="lg">
         <Box sx={{ mt: 4, mb: 6 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+          {/* Page header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             <IconButton onClick={() => router.push('/')} sx={{ mr: 1 }}>
               <ArrowBackIcon />
             </IconButton>
             <Typography variant="h4" component="h1">
               Dashboard
             </Typography>
+          </Box>
+
+          {/* Info section */}
+          <Box
+            sx={{
+              p: 2.5,
+              border: '1px solid',
+              borderColor: 'grey.400',
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" component="h2" sx={{ mb: 1.5 }}>
+              Info
+            </Typography>
+            <Divider sx={{ mb: 1.5 }} />
+            {infoLoading ? (
+              <>
+                <Skeleton width={240} height={28} />
+                <Skeleton width={300} height={28} sx={{ mt: 0.5 }} />
+              </>
+            ) : (
+              <>
+                <Typography variant="body1">
+                  Deuda total:{' '}
+                  <strong>
+                    ${(deudaTotal ?? 0).toLocaleString('en-US')}
+                  </strong>
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5 }}>
+                  Deuda como cantidad de sueldos:{' '}
+                  <strong>
+                    {deudaEnSueldos !== null ? deudaEnSueldos.toLocaleString('en-US') : '—'}
+                  </strong>
+                </Typography>
+              </>
+            )}
           </Box>
 
           {months.map((month, i) => renderMonth(monthsData[i] ?? null, month))}
