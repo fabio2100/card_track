@@ -50,6 +50,7 @@ export async function GET(request: Request) {
       `),
       query(`
         SELECT
+          p.id,
           p.card_id,
           p.created_at,
           p.name,

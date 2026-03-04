@@ -47,6 +47,7 @@ interface Ingreso {
 }
 
 interface Payment {
+  id: number;
   card_id: number;
   created_at: string;
   name: string | null;
@@ -93,16 +94,27 @@ export default function Dashboard() {
   const [deudaEnSueldos, setDeudaEnSueldos] = useState<number | null>(null);
   const [infoLoading, setInfoLoading] = useState(true);
 
-  // Delete dialog
+  // Delete dialog (ingreso)
   const [deleteTarget, setDeleteTarget] = useState<Ingreso | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Edit modal
+  // Edit modal (ingreso)
   const [editTarget, setEditTarget] = useState<Ingreso | null>(null);
   const [editName, setEditName] = useState('');
   const [editFecha, setEditFecha] = useState<Dayjs | null>(null);
   const [editMonto, setEditMonto] = useState('');
   const [editLoading, setEditLoading] = useState(false);
+
+  // Delete dialog (payment)
+  const [deletePaymentTarget, setDeletePaymentTarget] = useState<Payment | null>(null);
+  const [deletePaymentLoading, setDeletePaymentLoading] = useState(false);
+
+  // Edit modal (payment)
+  const [editPaymentTarget, setEditPaymentTarget] = useState<Payment | null>(null);
+  const [editPaymentName, setEditPaymentName] = useState('');
+  const [editPaymentFecha, setEditPaymentFecha] = useState<Dayjs | null>(null);
+  const [editPaymentMonto, setEditPaymentMonto] = useState('');
+  const [editPaymentLoading, setEditPaymentLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -143,6 +155,39 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const openEditPayment = (pmt: Payment) => {
+    setEditPaymentTarget(pmt);
+    setEditPaymentName(pmt.name ?? '');
+    setEditPaymentFecha(dayjs(pmt.created_at));
+    setEditPaymentMonto(Number(pmt.mount).toLocaleString('en-US'));
+  };
+
+  const handleDeletePayment = async () => {
+    if (!deletePaymentTarget) return;
+    setDeletePaymentLoading(true);
+    await fetch(`/api/payments/${deletePaymentTarget.id}`, { method: 'DELETE' });
+    setDeletePaymentTarget(null);
+    setDeletePaymentLoading(false);
+    await fetchAll();
+  };
+
+  const handleEditPayment = async () => {
+    if (!editPaymentTarget || !editPaymentFecha) return;
+    setEditPaymentLoading(true);
+    await fetch(`/api/payments/${editPaymentTarget.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: editPaymentName || null,
+        created_at: editPaymentFecha.toISOString(),
+        mount: parseInt(editPaymentMonto.replace(/,/g, '')),
+      }),
+    });
+    setEditPaymentTarget(null);
+    setEditPaymentLoading(false);
+    await fetchAll();
+  };
 
   const openEdit = (ing: Ingreso) => {
     setEditTarget(ing);
@@ -260,6 +305,7 @@ export default function Dashboard() {
                                   <TableCell sx={{ py: 0.5 }}>Fecha</TableCell>
                                   <TableCell sx={{ py: 0.5 }}>Nombre</TableCell>
                                   <TableCell align="right" sx={{ py: 0.5 }}>Monto</TableCell>
+                                  <TableCell />
                                 </TableRow>
                               </TableHead>
                               <TableBody>
@@ -277,6 +323,18 @@ export default function Dashboard() {
                                     </TableCell>
                                     <TableCell align="right" sx={{ py: 0.5 }}>
                                       ${Number(pmt.mount).toLocaleString('en-US')}
+                                    </TableCell>
+                                    <TableCell align="right" sx={{ whiteSpace: 'nowrap', p: 0.25 }}>
+                                      <IconButton size="small" onClick={() => openEditPayment(pmt)}>
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => setDeletePaymentTarget(pmt)}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
                                     </TableCell>
                                   </TableRow>
                                 ))}
@@ -448,6 +506,66 @@ export default function Dashboard() {
           </Button>
           <Button color="error" variant="contained" loading={deleteLoading} onClick={handleDelete}>
             Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete payment confirmation dialog */}
+      <Dialog open={!!deletePaymentTarget} onClose={() => setDeletePaymentTarget(null)}>
+        <DialogTitle>Eliminar pago</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Eliminar <strong>{deletePaymentTarget?.name || 'este pago'}</strong> por{' '}
+            <strong>${Number(deletePaymentTarget?.mount ?? 0).toLocaleString('en-US')}</strong>?
+            Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeletePaymentTarget(null)} disabled={deletePaymentLoading}>
+            Cancelar
+          </Button>
+          <Button color="error" variant="contained" loading={deletePaymentLoading} onClick={handleDeletePayment}>
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit payment modal */}
+      <Dialog open={!!editPaymentTarget} onClose={() => setEditPaymentTarget(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Editar pago</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          <TextField
+            label="Nombre"
+            fullWidth
+            value={editPaymentName}
+            onChange={(e) => setEditPaymentName(e.target.value)}
+          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Fecha"
+              value={editPaymentFecha}
+              onChange={(v) => setEditPaymentFecha(v)}
+              format="DD/MM/YY"
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+          </LocalizationProvider>
+          <TextField
+            label="Monto"
+            fullWidth
+            value={editPaymentMonto}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\D/g, '');
+              setEditPaymentMonto(raw ? parseInt(raw).toLocaleString('en-US') : '');
+            }}
+            InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditPaymentTarget(null)} disabled={editPaymentLoading}>
+            Cancelar
+          </Button>
+          <Button variant="contained" loading={editPaymentLoading} onClick={handleEditPayment}>
+            Guardar
           </Button>
         </DialogActions>
       </Dialog>
