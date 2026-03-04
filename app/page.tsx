@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
+  Checkbox,
   Container,
   FormControl,
+  FormControlLabel,
+  FormLabel,
   InputLabel,
   InputAdornment,
   Select,
@@ -13,9 +16,7 @@ import {
   Alert,
   Typography,
   RadioGroup,
-  FormControlLabel,
   Radio,
-  FormLabel,
   Button,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
@@ -42,6 +43,53 @@ export default function Home() {
   const [name, setName] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Dollar mode
+  const [esDolar, setEsDolar] = useState(false);
+  const [valorDolar, setValorDolar] = useState<string>('1500');
+  const [impuestos, setImpuestos] = useState<string>('1.21');
+  const [totalPesos, setTotalPesos] = useState<string>('');
+  const [usingDefaultDolar, setUsingDefaultDolar] = useState(false);
+  const [dolarFetched, setDolarFetched] = useState(false);
+
+  // Recalculate totalPesos whenever mount, valorDolar or impuestos change
+  useEffect(() => {
+    if (!esDolar) return;
+    const m = parseFloat(mount) || 0;
+    const vd = parseFloat(valorDolar) || 0;
+    const imp = parseFloat(impuestos) || 0;
+    const total = Math.round(m * vd * imp);
+    setTotalPesos(total > 0 ? total.toLocaleString('en-US') : '');
+  }, [mount, valorDolar, impuestos, esDolar]);
+
+  const fetchDolarValue = async () => {
+    try {
+      const res = await fetch('https://dolarapi.com/v1/dolares/oficial');
+      const data = await res.json();
+      if (data?.venta) {
+        setValorDolar(String(data.venta));
+        setUsingDefaultDolar(false);
+      } else {
+        setValorDolar('1500');
+        setUsingDefaultDolar(true);
+      }
+    } catch {
+      setValorDolar('1500');
+      setUsingDefaultDolar(true);
+    }
+  };
+
+  const handleEsDolarChange = (checked: boolean) => {
+    setEsDolar(checked);
+    setMount('');
+    if (checked && !dolarFetched) {
+      setDolarFetched(true);
+      fetchDolarValue();
+    }
+    if (!checked) {
+      setUsingDefaultDolar(false);
+    }
+  };
 
   // Fetch cards on component mount
   useEffect(() => {
@@ -72,10 +120,12 @@ export default function Home() {
 
     try {
       let endpoint = '/api/payments';
+      const rawMount = esDolar
+        ? parseInt(totalPesos.replace(/,/g, ''))
+        : parseInt(mount.replace(/,/g, ''));
       let body: any = {
         card_id: selectedCard,
-        mount: parseInt(mount.replace(/,/g, '')),
-
+        mount: rawMount,
         date: date.toISOString(),
         name,
       };
@@ -113,6 +163,10 @@ export default function Home() {
         setPaymentType('single');
         setInstallmentsCount('3');
         setAmountType('total');
+        setEsDolar(false);
+        setTotalPesos('');
+        setUsingDefaultDolar(false);
+        setDolarFetched(false);
       } else {
         setAlert({ type: 'error', message: data.error || 'Error al registrar el pago' });
       }
@@ -220,18 +274,78 @@ export default function Home() {
 
           <TextField
             fullWidth
-            type="text"
+            type={esDolar ? 'number' : 'text'}
             label={paymentType === 'installments' && amountType === 'installment' ? 'Monto de cuota' : 'Monto'}
             value={mount}
             onChange={(e) => {
-              const raw = e.target.value.replace(/\D/g, '');
-              setMount(raw ? parseInt(raw).toLocaleString('en-US') : '');
+              if (esDolar) {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                  setMount(val);
+                }
+              } else {
+                const raw = e.target.value.replace(/\D/g, '');
+                setMount(raw ? parseInt(raw).toLocaleString('en-US') : '');
+              }
             }}
-            sx={{ mb: 3 }}
+            sx={{ mb: 1 }}
+            inputProps={esDolar ? { step: '0.01', min: 0 } : undefined}
             InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
+              startAdornment: <InputAdornment position="start">{esDolar ? 'U$S' : '$'}</InputAdornment>,
             }}
           />
+
+          <FormControlLabel
+            sx={{ mb: esDolar ? 1.5 : 3 }}
+            control={
+              <Checkbox
+                checked={esDolar}
+                onChange={(e) => handleEsDolarChange(e.target.checked)}
+              />
+            }
+            label="Consumo en dólares"
+          />
+
+          {esDolar && (
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 3, alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1 }}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Valor dólar"
+                  value={valorDolar}
+                  onChange={(e) => setValorDolar(e.target.value)}
+                  inputProps={{ min: 0, step: 1 }}
+                />
+                {usingDefaultDolar && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
+                    Usando valor defecto
+                  </Typography>
+                )}
+              </Box>
+              <TextField
+                sx={{ flex: 1 }}
+                type="number"
+                label="Impuestos"
+                value={impuestos}
+                onChange={(e) => setImpuestos(e.target.value)}
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+              <TextField
+                sx={{ flex: 1 }}
+                type="text"
+                label="Total en $"
+                value={totalPesos}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '');
+                  setTotalPesos(raw ? parseInt(raw).toLocaleString('en-US') : '');
+                }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
+              />
+            </Box>
+          )}
 
           <Button
             type="submit"
