@@ -345,7 +345,6 @@ export default function Dashboard() {
                                       {new Date(pmt.created_at).toLocaleDateString('es-AR', {
                                         day: '2-digit',
                                         month: '2-digit',
-                                        year: '2-digit',
                                       })}
                                     </TableCell>
                                     <TableCell sx={{ py: 0.5 }}>
@@ -457,7 +456,6 @@ export default function Dashboard() {
                         {new Date(ing.created_at).toLocaleDateString('es-AR', {
                           day: '2-digit',
                           month: '2-digit',
-                          year: '2-digit',
                         })}
                       </TableCell>
                       <TableCell>{ing.name}</TableCell>
