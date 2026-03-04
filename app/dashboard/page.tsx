@@ -316,6 +316,7 @@ export default function Dashboard() {
                             </Typography>
                           </AccordionSummary>
                           <AccordionDetails sx={{ p: 0 }}>
+                            <Box sx={{ overflowX: 'auto' }}>
                             <Table size="small">
                               <TableHead>
                                 <TableRow>
@@ -357,6 +358,7 @@ export default function Dashboard() {
                                 ))}
                               </TableBody>
                             </Table>
+                            </Box>
                           </AccordionDetails>
                         </Accordion>
                       )}
@@ -407,6 +409,7 @@ export default function Dashboard() {
               </Typography>
             </AccordionSummary>
             <AccordionDetails sx={{ p: 0 }}>
+              <Box sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -446,6 +449,7 @@ export default function Dashboard() {
                   ))}
                 </TableBody>
               </Table>
+              </Box>
             </AccordionDetails>
           </Accordion>
         </Box>
