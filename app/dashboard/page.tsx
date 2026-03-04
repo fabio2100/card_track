@@ -60,6 +60,7 @@ interface CardData {
   description: string;
   last_four: string;
   expiration_date: string | null;
+  end_date: string | null;
   total_payments: number;
   payments: Payment[];
 }
@@ -231,6 +232,19 @@ export default function Dashboard() {
     return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${dayNum}`;
   };
 
+  const formatClosing = (value: string | null, monthKey: string) => {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    const dayName = d.toLocaleDateString('es-AR', { weekday: 'long' });
+    const dayNum = d.getDate();
+    const valueMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const base = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${dayNum}`;
+    if (valueMonth === monthKey) return base;
+    const monthName = d.toLocaleDateString('es-AR', { month: 'long' });
+    return `${base} de ${monthName}`;
+  };
+
   const renderMonth = (data: MonthData | null, monthKey: string) => {
     const isLoading = loading || data === null;
     const cards = data?.cards ?? [];
@@ -283,6 +297,9 @@ export default function Dashboard() {
                       </Typography>
                       <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
                         ${Number(card.total_payments).toLocaleString('en-US')}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Cierra: {formatClosing(card.end_date, monthKey)}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Vence: {formatExpiration(card.expiration_date)}
