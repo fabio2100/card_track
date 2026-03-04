@@ -16,6 +16,7 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  LinearProgress,
   Grid,
   IconButton,
   InputAdornment,
@@ -304,6 +305,17 @@ export default function Dashboard() {
                       <Typography variant="body2" color="text.secondary">
                         Vence: {formatExpiration(card.expiration_date)}
                       </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={totalTarjetas > 0 ? card.total_payments * 100 / totalTarjetas : 0}
+                          sx={{ flex: 1 }}
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap', minWidth: 32, textAlign: 'right' }}>
+                          {totalTarjetas > 0 ? Math.round(card.total_payments * 100 / totalTarjetas) : 0}%
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ my: 1 }} />
                       {card.payments.length > 0 && (
                         <Accordion
                           disableGutters
@@ -371,21 +383,40 @@ export default function Dashboard() {
         {/* Totals summary */}
         {!isLoading && cards.length > 0 && (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" component="p">
-              Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
-            </Typography>
-            {pct !== null && (
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-                <Typography variant="h6" component="p">
-                  <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+            {(() => {
+              const pctTextColor = pct !== null ? (pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main') : undefined;
+              return (
+                <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
+                  Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
                 </Typography>
-                {totalIngresos === 0 && lastSueldo !== null && (
-                  <Typography variant="caption" color="text.secondary">
-                    Usando salario previo
-                  </Typography>
-                )}
-              </Box>
-            )}
+              );
+            })()}
+            {pct !== null && (() => {
+              const pctColor = pct <= 10 ? 'success' : pct <= 30 ? 'warning' : 'error';
+              const pctTextColor = pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main';
+              return (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
+                    <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
+                      <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+                    </Typography>
+                    {totalIngresos === 0 && lastSueldo !== null && (
+                      <Typography variant="caption" color="text.secondary">
+                        Usando salario previo
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      color={pctColor as 'success' | 'warning' | 'error'}
+                      value={Math.min((pct / 50) * 100, 100)}
+                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                    />
+                  </Box>
+                </>
+              );
+            })()}
           </Box>
         )}
 
