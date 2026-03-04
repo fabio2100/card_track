@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       path: '/',
       sameSite: 'lax',
       // No maxAge = session cookie; set maxAge if you want persistence:
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
     return response;
   } catch {
