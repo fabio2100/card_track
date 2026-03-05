@@ -113,7 +113,7 @@ export default function PagoTarjeta() {
               <Typography variant="body2">{successMessage}</Typography>
             </Box>
           )}
-
+          <Box sx={{ overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow>
@@ -165,6 +165,7 @@ export default function PagoTarjeta() {
                   ))}
             </TableBody>
           </Table>
+          </Box>
         </Box>
       </Container>
 
