@@ -19,6 +19,7 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  LinearProgress,
   Skeleton,
   Table,
   TableBody,
@@ -362,7 +363,7 @@ export default function Dashboard() {
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Box>
-
+                      
                       <Divider sx={{ my: 1 }} />
                       {card.payments.length > 0 && (
                         <Accordion
@@ -452,6 +453,14 @@ export default function Dashboard() {
                         Usando salario previo
                       </Typography>
                     )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      color={pctColor as 'success' | 'warning' | 'error'}
+                      value={Math.min((pct / 50) * 100, 100)}
+                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                    />
                   </Box>
                   <Box sx={{ mt: 1 }}>
                     <PieChart
