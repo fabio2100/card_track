@@ -60,6 +60,8 @@ interface CardData {
   id: number;
   description: string;
   last_four: string;
+  cycle_id: number | null;
+  start_date: string | null;
   expiration_date: string | null;
   end_date: string | null;
   total_payments: number;
@@ -118,6 +120,13 @@ export default function Dashboard() {
   const [editPaymentMonto, setEditPaymentMonto] = useState('');
   const [editPaymentLoading, setEditPaymentLoading] = useState(false);
 
+  // Edit modal (card cycle)
+  const [editCycleTarget, setEditCycleTarget] = useState<CardData | null>(null);
+  const [editCycleStartDate, setEditCycleStartDate] = useState<Dayjs | null>(null);
+  const [editCycleEndDate, setEditCycleEndDate] = useState<Dayjs | null>(null);
+  const [editCycleExpDate, setEditCycleExpDate] = useState<Dayjs | null>(null);
+  const [editCycleLoading, setEditCycleLoading] = useState(false);
+
   const fetchAll = useCallback(async () => {
     try {
       const [infoRes, ...monthResults] = await Promise.all([
@@ -163,6 +172,32 @@ export default function Dashboard() {
     setEditPaymentName(pmt.name ?? '');
     setEditPaymentFecha(dayjs(pmt.created_at));
     setEditPaymentMonto(Number(pmt.mount).toLocaleString('en-US'));
+  };
+
+  const openEditCycle = (card: CardData) => {
+    setEditCycleTarget(card);
+    setEditCycleStartDate(card.start_date ? dayjs(card.start_date) : null);
+    setEditCycleEndDate(card.end_date ? dayjs(card.end_date) : null);
+    setEditCycleExpDate(card.expiration_date ? dayjs(card.expiration_date) : null);
+  };
+
+  const handleEditCycle = async () => {
+    if (!editCycleTarget || !editCycleStartDate || !editCycleEndDate || !editCycleExpDate) return;
+    setEditCycleLoading(true);
+    await fetch('/api/update_cycle', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editCycleTarget.cycle_id,
+        card_id: editCycleTarget.id,
+        start_date: editCycleStartDate.toISOString(),
+        end_date: editCycleEndDate.toISOString(),
+        expiration_date: editCycleExpDate.toISOString(),
+      }),
+    });
+    setEditCycleTarget(null);
+    setEditCycleLoading(false);
+    await fetchAll();
   };
 
   const handleDeletePayment = async () => {
@@ -299,12 +334,23 @@ export default function Dashboard() {
                       <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
                         ${Number(card.total_payments).toLocaleString('en-US')}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Cierra: {formatClosing(card.end_date, monthKey)}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Vence: {formatExpiration(card.expiration_date)}
-                      </Typography>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'stretch' }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Cierra: {formatClosing(card.end_date, monthKey)}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Vence: {formatExpiration(card.expiration_date)}
+                          </Typography>
+                        </Box>
+                        <IconButton
+                          size="small"
+                          sx={{ borderRadius: 1 }}
+                          onClick={() => openEditCycle(card)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                         <LinearProgress
                           variant="determinate"
@@ -615,6 +661,50 @@ export default function Dashboard() {
             Cancelar
           </Button>
           <Button variant="contained" loading={editPaymentLoading} onClick={handleEditPayment}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit cycle modal */}
+      <Dialog open={!!editCycleTarget} onClose={() => setEditCycleTarget(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Editar ciclo</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '12px !important' }}>
+          <TextField
+            label="Tarjeta"
+            fullWidth
+            value={editCycleTarget?.description ?? ''}
+            slotProps={{ input: { readOnly: true } }}
+          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Fecha inicio"
+              value={editCycleStartDate}
+              onChange={(v) => setEditCycleStartDate(v)}
+              format="DD/MM/YY"
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+            <DatePicker
+              label="Fecha cierre"
+              value={editCycleEndDate}
+              onChange={(v) => setEditCycleEndDate(v)}
+              format="DD/MM/YY"
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+            <DatePicker
+              label="Fecha vencimiento"
+              value={editCycleExpDate}
+              onChange={(v) => setEditCycleExpDate(v)}
+              format="DD/MM/YY"
+              slotProps={{ textField: { fullWidth: true } }}
+            />
+          </LocalizationProvider>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditCycleTarget(null)} disabled={editCycleLoading}>
+            Cerrar
+          </Button>
+          <Button variant="contained" loading={editCycleLoading} onClick={handleEditCycle}>
             Guardar
           </Button>
         </DialogActions>

@@ -21,6 +21,8 @@ export async function GET(request: Request) {
           c.id,
           c.description,
           c.last_four,
+          cc.id AS cycle_id,
+          cc.start_date,
           cc.expiration_date,
           cc.end_date,
           COALESCE(SUM(p.mount), 0) AS total_payments
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
           AND cc.start_date IS NOT NULL
           AND p.created_at >= cc.start_date
           AND p.created_at < cc.end_date
-        GROUP BY c.id, c.description, c.last_four, cc.expiration_date, cc.end_date
+        GROUP BY c.id, c.description, c.last_four, cc.id, cc.start_date, cc.expiration_date, cc.end_date
         ORDER BY c.description
       `, [monthDate]),
       query(`
