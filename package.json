@@ -15,6 +15,7 @@
     "@mui/icons-material": "^7.3.8",
     "@mui/lab": "^7.0.1-beta.22",
     "@mui/material": "^7.3.8",
+    "@mui/x-charts": "^8.27.4",
     "@mui/x-date-pickers": "^8.27.2",
     "dayjs": "^1.11.19",
     "next": "16.1.6",

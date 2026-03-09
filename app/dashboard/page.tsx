@@ -16,7 +16,6 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
-  LinearProgress,
   Grid,
   IconButton,
   InputAdornment,
@@ -29,6 +28,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { PieChart } from '@mui/x-charts/PieChart';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -362,16 +362,7 @@ export default function Dashboard() {
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={totalTarjetas > 0 ? card.total_payments * 100 / totalTarjetas : 0}
-                          sx={{ flex: 1 }}
-                        />
-                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap', minWidth: 32, textAlign: 'right' }}>
-                          {totalTarjetas > 0 ? Math.round(card.total_payments * 100 / totalTarjetas) : 0}%
-                        </Typography>
-                      </Box>
+
                       <Divider sx={{ my: 1 }} />
                       {card.payments.length > 0 && (
                         <Accordion
@@ -462,12 +453,28 @@ export default function Dashboard() {
                       </Typography>
                     )}
                   </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      color={pctColor as 'success' | 'warning' | 'error'}
-                      value={Math.min((pct / 50) * 100, 100)}
-                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                  <Box sx={{ mt: 1 }}>
+                    <PieChart
+                      series={[{
+                        data: cards.map((c) => ({
+                          id: c.id,
+                          value: Number(c.total_payments),
+                          label: c.description,
+                        })),
+                        //innerRadius: 30,
+                        outerRadius: 70,
+                        paddingAngle: 2,
+                        cornerRadius: 3,
+                        highlightScope: { fade: 'global', highlight: 'item' },
+                        valueFormatter: (item) => {
+                          const pct = totalTarjetas > 0
+                            ? Math.round((item.value / totalTarjetas) * 100)
+                            : 0;
+                          return `$${item.value.toLocaleString('en-US')} (${pct}%)`;
+                        },
+                      }]}
+                      slotProps={{ legend: { } }}
+                      height={160}
                     />
                   </Box>
                 </>
