@@ -36,6 +36,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useRouter } from 'next/navigation';
 import dayjs, { Dayjs } from 'dayjs';
@@ -126,6 +128,7 @@ export default function Dashboard() {
   const [editCycleEndDate, setEditCycleEndDate] = useState<Dayjs | null>(null);
   const [editCycleExpDate, setEditCycleExpDate] = useState<Dayjs | null>(null);
   const [editCycleLoading, setEditCycleLoading] = useState(false);
+  const [editCycleResult, setEditCycleResult] = useState<'success' | 'error' | null>(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -179,12 +182,13 @@ export default function Dashboard() {
     setEditCycleStartDate(card.start_date ? dayjs(card.start_date) : null);
     setEditCycleEndDate(card.end_date ? dayjs(card.end_date) : null);
     setEditCycleExpDate(card.expiration_date ? dayjs(card.expiration_date) : null);
+    setEditCycleResult(null);
   };
 
   const handleEditCycle = async () => {
     if (!editCycleTarget || !editCycleStartDate || !editCycleEndDate || !editCycleExpDate) return;
     setEditCycleLoading(true);
-    await fetch('/api/update_cycle', {
+    const res = await fetch('/api/update_cycle', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -195,9 +199,16 @@ export default function Dashboard() {
         expiration_date: editCycleExpDate.toISOString(),
       }),
     });
-    setEditCycleTarget(null);
+    const data = await res.json();
     setEditCycleLoading(false);
-    await fetchAll();
+    setEditCycleResult(data.success ? 'success' : 'error');
+    if (data.success) {
+      await fetchAll();
+    }
+    setTimeout(() => {
+      setEditCycleTarget(null);
+      setEditCycleResult(null);
+    }, 1000);
   };
 
   const handleDeletePayment = async () => {
@@ -701,11 +712,16 @@ export default function Dashboard() {
           </LocalizationProvider>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditCycleTarget(null)} disabled={editCycleLoading}>
+          <Button onClick={() => setEditCycleTarget(null)} disabled={editCycleLoading || !!editCycleResult}>
             Cerrar
           </Button>
-          <Button variant="contained" loading={editCycleLoading} onClick={handleEditCycle}>
-            Guardar
+          <Button
+            variant="contained"
+            loading={editCycleLoading}
+            onClick={!editCycleResult ? handleEditCycle : undefined}
+            color={editCycleResult === 'success' ? 'success' : editCycleResult === 'error' ? 'error' : 'primary'}
+          >
+            {editCycleResult === 'success' ? <CheckIcon /> : editCycleResult === 'error' ? <CloseIcon /> : 'Guardar'}
           </Button>
         </DialogActions>
       </Dialog>

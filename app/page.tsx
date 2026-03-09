@@ -44,6 +44,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  useEffect(() => {
+    if (!alert) return;
+    const timer = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timer);
+  }, [alert]);
+
   // Dollar mode
   const [esDolar, setEsDolar] = useState(false);
   const [valorDolar, setValorDolar] = useState<string>('1500');
