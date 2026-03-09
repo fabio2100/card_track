@@ -177,6 +177,8 @@ export default function Home() {
     }
   };
 
+  const buttonHeight = 80;
+
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 4, mb: 4 }}>
@@ -347,45 +349,48 @@ export default function Home() {
             </Box>
           )}
 
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            loading={loading}
-            size="large"
-          >
-            Registrar Pago
-          </Button>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              loading={loading}
+              size="large"
+              sx={{ height: buttonHeight }}
+            >
+              Registrar Pago
+            </Button>
 
-          <Button
-            variant="outlined"
-            fullWidth
-            size="large"
-            sx={{ mt: 2 }}
-            onClick={() => router.push('/ingresos')}
-          >
-            Agregar Ingreso
-          </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              size="large"
+              sx={{ height: buttonHeight }}
+              onClick={() => router.push('/ingresos')}
+            >
+              Agregar Ingreso
+            </Button>
 
-          <Button
-            variant="outlined"
-            fullWidth
-            size="large"
-            sx={{ mt: 2 }}
-            onClick={() => router.push('/pago_tarjeta')}
-          >
-            Pago Tarjeta
-          </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              size="large"
+              sx={{ height: buttonHeight }}
+              onClick={() => router.push('/pago_tarjeta')}
+            >
+              Pago Tarjeta
+            </Button>
 
-          <Button
-            variant="outlined"
-            fullWidth
-            size="large"
-            sx={{ mt: 2 }}
-            onClick={() => router.push('/dashboard')}
-          >
-            Dashboard
-          </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              size="large"
+              sx={{ height: buttonHeight }}
+              onClick={() => router.push('/dashboard')}
+            >
+              Dashboard
+            </Button>
+          </Box>
         </Box>
       </Box>
     </Container>
