@@ -14,7 +14,7 @@ export async function GET() {
         c.last_four
       FROM card_cycles cc
       JOIN cards c ON c.id = cc.card_id
-      WHERE cc.expiration_date > NOW()
+      WHERE cc.expiration_date >= NOW() - interval '2 days'
       ORDER BY cc.expiration_date
       LIMIT 12
     `);
