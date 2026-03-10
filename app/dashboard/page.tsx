@@ -300,6 +300,7 @@ export default function Dashboard() {
     const totalIngresos = data?.totalIngresos ?? 0;
     const lastSueldo = data?.lastSueldo ?? null;
     const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
+    if(totalTarjetas === 0) return null;
     const salaryBase = totalIngresos > 0 ? totalIngresos : lastSueldo;
     const pct =
       salaryBase && salaryBase > 0
