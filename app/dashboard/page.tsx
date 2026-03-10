@@ -419,10 +419,14 @@ export default function Dashboard() {
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'stretch' }}>
                         <Box>
                           <Typography variant="body2" color="text.secondary">
-                            Cierra: {formatClosing(card.end_date, monthKey)}
+                            {card.end_date && dayjs(card.end_date).isBefore(dayjs(), 'day')
+                              ? <s>Cierra: {formatClosing(card.end_date, monthKey)}</s>
+                              : <>Cierra: {formatClosing(card.end_date, monthKey)}</>}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            Vence: {formatExpiration(card.expiration_date)}
+                            {card.expiration_date && dayjs(card.expiration_date).isBefore(dayjs(), 'day')
+                              ? <s>Vence: {formatExpiration(card.expiration_date)}</s>
+                              : <>Vence: {formatExpiration(card.expiration_date)}</>}
                           </Typography>
                         </Box>
                         <IconButton
