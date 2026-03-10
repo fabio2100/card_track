@@ -30,6 +30,7 @@ import {
   Typography,
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
+import { BarChart } from '@mui/x-charts/BarChart';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -89,7 +90,7 @@ function buildMonthLabel(month: string): string {
 
 export default function Dashboard() {
   const router = useRouter();
-  const months = [0, 1, 2].map((offset) =>
+  const months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((offset) =>
     dayjs().add(offset, 'month').format('YYYY-MM')
   );
 
@@ -143,7 +144,6 @@ export default function Dashboard() {
         setDeudaEnSueldos(infoRes.deudaEnSueldos);
       }
       setInfoLoading(false);
-
       setMonthsData(
         monthResults.map((data, i) =>
           data.success
@@ -605,6 +605,67 @@ export default function Dashboard() {
                     {deudaEnSueldos !== null ? deudaEnSueldos.toLocaleString('en-US') : '—'}
                   </strong>
                 </Typography>
+                {!loading && (() => {
+                  const availableMonths = monthsData.filter(
+                    (month): month is MonthData =>
+                      month !== null && month.cards.some((card) => Number(card.total_payments) > 0)
+                  );
+                  const cardMap: Record<number, string> = {};
+
+                  availableMonths.forEach((month) => {
+                    month.cards.forEach((card) => {
+                      if (!(card.id in cardMap)) {
+                        cardMap[card.id] = card.description;
+                      }
+                    });
+                  });
+
+                  const sortedCardIds = Object.keys(cardMap)
+                    .map(Number)
+                    .sort((a, b) => a - b);
+
+                  if (availableMonths.length === 0 || sortedCardIds.length === 0) {
+                    return null;
+                  }
+
+                  const dataset = availableMonths.map((month) => {
+                    const entry: Record<string, number | string> = {
+                      cycleName: month.cycleName ?? month.label,
+                    };
+
+                    month.cards.forEach((card) => {
+                      entry[`card_${card.id}`] = Number(card.total_payments);
+                    });
+
+                    sortedCardIds.forEach((cardId) => {
+                      if (!("card_" + cardId in entry)) {
+                        entry[`card_${cardId}`] = 0;
+                      }
+                    });
+
+                    return entry;
+                  });
+
+                  const series = sortedCardIds.map((cardId) => ({
+                    dataKey: `card_${cardId}`,
+                    label: cardMap[cardId],
+                    stack: 'total',
+                    valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
+                  }));
+
+                  return (
+                    <Box sx={{ mt: 2 }}>
+                      <BarChart
+                        dataset={dataset}
+                        xAxis={[{ scaleType: 'band', dataKey: 'cycleName' }]}
+                        yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
+                        series={series}
+                        height={280}
+                        margin={{ top: 16, right: 16, bottom: 48, left: 80 }}
+                      />
+                    </Box>
+                  );
+                })()}
               </>
             )}
           </Box>
