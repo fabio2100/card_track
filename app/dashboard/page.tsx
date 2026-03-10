@@ -655,15 +655,18 @@ export default function Dashboard() {
                   }));
 
                   return (
-                    <Box sx={{ mt: 2 }}>
-                      <BarChart
-                        dataset={dataset}
-                        xAxis={[{ scaleType: 'band', dataKey: 'cycleName' }]}
-                        yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
-                        series={series}
-                        height={280}
-                        margin={{ top: 16, right: 16, bottom: 48, left: 80 }}
-                      />
+                    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+                      <Box sx={{ mt: 2, minWidth: 500, overflowX: 'auto' }}>
+                        <BarChart
+                          dataset={dataset}
+                          xAxis={[{ scaleType: 'band', dataKey: 'cycleName' }]}
+                          yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
+                          series={series}
+                          height={280}
+                          
+                          margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
+                        />
+                      </Box>
                     </Box>
                   );
                 })()}
