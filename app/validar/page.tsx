@@ -49,12 +49,12 @@ function ValidarForm() {
       </Typography>
       <TextField
         fullWidth
-        type="number"
+        type="password"
         label="Código"
         value={code}
         onChange={(e) => setCode(e.target.value)}
-        autoFocus
-        inputProps={{ inputMode: 'numeric' }}
+        inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+        autoFocus     
       />
       <Button type="submit" variant="contained" fullWidth loading={loading}>
         Ingresar
