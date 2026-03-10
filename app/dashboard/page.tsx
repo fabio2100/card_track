@@ -322,7 +322,69 @@ export default function Dashboard() {
         <Typography variant="h5" component="h2" sx={{ mb: 2 }}>
           {isLoading ? <Skeleton width={200} /> : (data?.cycleName ?? data?.label ?? buildMonthLabel(monthKey))}
         </Typography>
-
+                {/* Totals summary */}
+        {!isLoading && cards.length > 0 && (
+          <Box sx={{ mt: 2 }}>
+            {(() => {
+              const pctTextColor = pct !== null ? (pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main') : undefined;
+              return (
+                <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
+                  Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
+                </Typography>
+              );
+            })()}
+            {pct !== null && (() => {
+              const pctColor = pct <= 10 ? 'success' : pct <= 30 ? 'warning' : 'error';
+              const pctTextColor = pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main';
+              return (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
+                    <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
+                      <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+                    </Typography>
+                    {totalIngresos === 0 && lastSueldo !== null && (
+                      <Typography variant="caption" color="text.secondary">
+                        Usando salario previo
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      color={pctColor as 'success' | 'warning' | 'error'}
+                      value={Math.min((pct / 50) * 100, 100)}
+                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                    />
+                  </Box>
+                  <Box sx={{ mt: 1 }}>
+                    <PieChart
+                      series={[{
+                        data: cards.map((c) => ({
+                          id: c.id,
+                          value: Number(c.total_payments),
+                          label: c.description,
+                        })),
+                        //innerRadius: 30,
+                        outerRadius: 70,
+                        paddingAngle: 2,
+                        cornerRadius: 3,
+                        highlightScope: { fade: 'global', highlight: 'item' },
+                        valueFormatter: (item) => {
+                          const pct = totalTarjetas > 0
+                            ? Math.round((item.value / totalTarjetas) * 100)
+                            : 0;
+                          return `$${item.value.toLocaleString('en-US')} (${pct}%)`;
+                        },
+                      }]}
+                      slotProps={{ legend: { } }}
+                      height={160}
+                    />
+                  </Box>
+                </>
+              );
+            })()}
+          </Box>
+        )}
         {/* Cards grid */}
         <Grid container spacing={2}>
           {isLoading
@@ -429,69 +491,6 @@ export default function Dashboard() {
               ))}
         </Grid>
 
-        {/* Totals summary */}
-        {!isLoading && cards.length > 0 && (
-          <Box sx={{ mt: 2 }}>
-            {(() => {
-              const pctTextColor = pct !== null ? (pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main') : undefined;
-              return (
-                <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
-                  Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
-                </Typography>
-              );
-            })()}
-            {pct !== null && (() => {
-              const pctColor = pct <= 10 ? 'success' : pct <= 30 ? 'warning' : 'error';
-              const pctTextColor = pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main';
-              return (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
-                    <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
-                      <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
-                    </Typography>
-                    {totalIngresos === 0 && lastSueldo !== null && (
-                      <Typography variant="caption" color="text.secondary">
-                        Usando salario previo
-                      </Typography>
-                    )}
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      color={pctColor as 'success' | 'warning' | 'error'}
-                      value={Math.min((pct / 50) * 100, 100)}
-                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
-                    />
-                  </Box>
-                  <Box sx={{ mt: 1 }}>
-                    <PieChart
-                      series={[{
-                        data: cards.map((c) => ({
-                          id: c.id,
-                          value: Number(c.total_payments),
-                          label: c.description,
-                        })),
-                        //innerRadius: 30,
-                        outerRadius: 70,
-                        paddingAngle: 2,
-                        cornerRadius: 3,
-                        highlightScope: { fade: 'global', highlight: 'item' },
-                        valueFormatter: (item) => {
-                          const pct = totalTarjetas > 0
-                            ? Math.round((item.value / totalTarjetas) * 100)
-                            : 0;
-                          return `$${item.value.toLocaleString('en-US')} (${pct}%)`;
-                        },
-                      }]}
-                      slotProps={{ legend: { } }}
-                      height={160}
-                    />
-                  </Box>
-                </>
-              );
-            })()}
-          </Box>
-        )}
 
         {/* Ingresos section */}
         <Box sx={{ mt: 3 }}>
@@ -630,8 +629,13 @@ export default function Dashboard() {
                   }
 
                   const dataset = availableMonths.map((month) => {
+                    const total = month.cards.reduce(
+                      (sum, card) => sum + Number(card.total_payments),
+                      0
+                    );
                     const entry: Record<string, number | string> = {
                       cycleName: month.cycleName ?? month.label,
+                      total,
                     };
 
                     month.cards.forEach((card) => {
@@ -659,7 +663,19 @@ export default function Dashboard() {
                       <Box sx={{ mt: 2, minWidth: 500, overflowX: 'auto' }}>
                         <BarChart
                           dataset={dataset}
-                          xAxis={[{ scaleType: 'band', dataKey: 'cycleName' }]}
+                          xAxis={[{
+                            scaleType: 'band',
+                            dataKey: 'cycleName',
+                            valueFormatter: (value, context) => {
+                              if (context.location !== 'tooltip') {
+                                return String(value);
+                              }
+
+                              const item = dataset.find((entry) => entry.cycleName === value);
+                              const total = Number(item?.total ?? 0);
+                              return `${String(value)} - Total: $${total.toLocaleString('en-US')}`;
+                            },
+                          }]}
                           yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
                           series={series}
                           height={280}
