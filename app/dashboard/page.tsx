@@ -328,9 +328,16 @@ export default function Dashboard() {
             {(() => {
               const pctTextColor = pct !== null ? (pct <= 10 ? 'success.main' : pct <= 30 ? 'warning.main' : 'error.main') : undefined;
               return (
-                <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
-                  Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
-                </Typography>
+                <>
+                  <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
+                    Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
+                  </Typography>
+                  {salaryBase !== null && (
+                    <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
+                      Disponible: <strong>${(salaryBase - totalTarjetas).toLocaleString('en-US')}</strong>
+                    </Typography>
+                  )}
+                </>
               );
             })()}
             {pct !== null && (() => {
@@ -673,7 +680,7 @@ export default function Dashboard() {
 
                               const item = dataset.find((entry) => entry.cycleName === value);
                               const total = Number(item?.total ?? 0);
-                              return `${String(value)} - Total: $${total.toLocaleString('en-US')}`;
+                              return `${String(value)} : $${total.toLocaleString('en-US')}`;
                             },
                           }]}
                           yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
@@ -690,7 +697,7 @@ export default function Dashboard() {
             )}
           </Box>
 
-          {months.map((month, i) => renderMonth(monthsData[i] ?? null, month))}
+          {months.map((month, i) => i < 3 ? renderMonth(monthsData[i] ?? null, month) : null)}
         </Box>
       </Container>
 
