@@ -7,6 +7,7 @@ export async function GET(request: Request) {
     const monthParam = searchParams.get('month'); // 'YYYY-MM'
     // Use the 15th of the target month as reference to find the active cycle
     const monthDate = monthParam ? `${monthParam}-15` : new Date().toISOString().slice(0, 10);
+    const mostrarPagados = searchParams.get('mostrarPagados') === 'true';
 
     const [cycleResult, cardsResult, ingresosResult, lastSueldoResult, paymentsResult] = await Promise.all([
       query(`
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
           AND cc.start_date IS NOT NULL
           AND p.created_at >= cc.start_date
           AND p.created_at < cc.end_date
+          ${!mostrarPagados ? 'AND p.pagado = false' : ''}
         GROUP BY c.id, c.description, c.last_four, cc.id, cc.start_date, cc.expiration_date, cc.end_date
         ORDER BY c.description
       `, [monthDate]),
@@ -65,6 +67,7 @@ export async function GET(request: Request) {
           AND DATE_TRUNC('month', cc.expiration_date) = DATE_TRUNC('month', $1::date)
           AND p.created_at >= cc.start_date
           AND p.created_at < cc.end_date
+          ${!mostrarPagados ? 'AND p.pagado = false' : ''}
         ORDER BY p.card_id, p.created_at DESC
       `, [monthDate]),
     ]);

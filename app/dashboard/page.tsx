@@ -9,6 +9,7 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Container,
   Dialog,
   DialogActions,
@@ -16,6 +17,7 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
@@ -96,6 +98,7 @@ export default function Dashboard() {
 
   const [monthsData, setMonthsData] = useState<(MonthData | null)[]>([null, null, null]);
   const [loading, setLoading] = useState(true);
+  const [mostrarPagados, setMostrarPagados] = useState(false);
 
   // Global info
   const [deudaTotal, setDeudaTotal] = useState<number | null>(null);
@@ -135,8 +138,8 @@ export default function Dashboard() {
   const fetchAll = useCallback(async () => {
     try {
       const [infoRes, ...monthResults] = await Promise.all([
-        fetch('/api/info').then((r) => r.json()),
-        ...months.map((m) => fetch(`/api/dashboard?month=${m}`).then((r) => r.json())),
+        fetch(`/api/info?mostrarPagados=${mostrarPagados}`).then((r) => r.json()),
+        ...months.map((m) => fetch(`/api/dashboard?month=${m}${mostrarPagados ? '&mostrarPagados=true' : ''}`).then((r) => r.json())),
       ]);
 
       if (infoRes.success) {
@@ -165,7 +168,7 @@ export default function Dashboard() {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mostrarPagados]);
 
   useEffect(() => {
     fetchAll();
@@ -583,6 +586,16 @@ export default function Dashboard() {
               Dashboard
             </Typography>
           </Box>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={mostrarPagados}
+                onChange={(e) => setMostrarPagados(e.target.checked)}
+              />
+            }
+            label="Mostrar pagados"
+            sx={{ mb: 2 }}
+          />
 
           {/* Info section */}
           <Box

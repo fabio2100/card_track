@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const mostrarPagados = searchParams.get('mostrarPagados') === 'true';
     const [deudaResult, sueldoResult] = await Promise.all([
       query(`
         SELECT COALESCE(SUM(mount), 0) AS deuda_total
         FROM payments
-        WHERE pagado = false
+        WHERE 1=1
+        ${!mostrarPagados ? 'AND pagado = false' : ''}
       `),
       query(`
         SELECT monto
