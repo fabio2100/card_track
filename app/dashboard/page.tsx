@@ -683,6 +683,22 @@ export default function Dashboard() {
                   }));
 
 
+                  const funnelData = [...dataset]
+                    .map((entry) => {
+                      const total = Number(entry.total ?? 0);
+                      const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
+                      return { label: String(entry.cycleName), pct };
+                    })
+                    .sort((a, b) => b.pct - a.pct);
+
+                  const svgW = 500;
+                  const svgH = 120;
+                  const segW = svgW / (funnelData.length || 1);
+                  const maxH = svgH * 0.85;
+                  const cy = svgH / 2;
+                  const funnelColors = ['#1976d2', '#1565c0', '#0d47a1', '#1e88e5', '#42a5f5', '#90caf9'];
+                  const funnelHeights = funnelData.map((d) => Math.max((d.pct / 100) * maxH, 12));
+
                   return (
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
                       <Box sx={{ mt: 2, minWidth: 500, overflowX: 'auto' }}>
@@ -708,6 +724,69 @@ export default function Dashboard() {
                           
                           margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
                         />
+                      </Box>
+
+                      {/* Funnel chart — pct of deudaTotal per cycle, sorted largest first */}
+                      <Box sx={{
+                        mt: 3,
+                        minWidth: 500,
+                        maxWidth: 700,
+                        overflowX: 'auto',
+                        mx: 'auto',
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: 'grey.400',
+                        borderRadius: 2,
+                        backgroundColor: '#1a1a1a'
+                      }}>
+                        <Typography variant="body1" sx={{ mt: 0.5 }}>
+                          Distribución porcentual por ciclo
+                        </Typography>
+                        <svg
+                          width="100%"
+                          viewBox={`0 0 ${svgW} ${svgH}`}
+                          style={{ overflow: 'visible', display: 'block' }}
+                        >
+                          {funnelData.map((d, i) => {
+                            const leftH = funnelHeights[i];
+                            const rightH = i + 1 < funnelHeights.length ? funnelHeights[i + 1] : funnelHeights[i];
+                            const x = i * segW;
+                            const points = [
+                              `${x},${cy - leftH / 2}`,
+                              `${x + segW},${cy - rightH / 2}`,
+                              `${x + segW},${cy + rightH / 2}`,
+                              `${x},${cy + leftH / 2}`,
+                            ].join(' ');
+                            return (
+                              <g key={i}>
+                                <polygon
+                                  points={points}
+                                  fill={funnelColors[i % funnelColors.length]}
+                                  opacity={0.88}
+                                />
+                                <text
+                                  x={x + segW / 2}
+                                  y={cy + 5}
+                                  textAnchor="middle"
+                                  fill="white"
+                                  fontSize={11}
+                                  fontWeight="bold"
+                                >
+                                  {d.label}
+                                </text>
+                                <text
+                                  x={x + segW / 2}
+                                  y={cy + 18}
+                                  textAnchor="middle"
+                                  fill="white"
+                                  fontSize={11}
+                                >
+                                  {d.pct}%
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </svg>
                       </Box>
                     </Box>
                   );
