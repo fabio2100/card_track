@@ -7,10 +7,15 @@ export async function GET(request: Request) {
     const mostrarPagados = searchParams.get('mostrarPagados') === 'true';
     const [deudaResult, sueldoResult] = await Promise.all([
       query(`
-        SELECT COALESCE(SUM(mount), 0) AS deuda_total
-        FROM payments
+        SELECT COALESCE(SUM(p.mount), 0) AS deuda_total
+        FROM payments p
+        JOIN card_cycles cc
+          ON cc.card_id = p.card_id
+          AND DATE_TRUNC('month', cc.expiration_date) >= DATE_TRUNC('month', CURRENT_DATE)
+          AND p.created_at >= cc.start_date
+          AND p.created_at < cc.end_date
         WHERE 1=1
-        ${!mostrarPagados ? 'AND pagado = false' : ''}
+        ${!mostrarPagados ? 'AND p.pagado = false' : ''}
       `),
       query(`
         SELECT monto

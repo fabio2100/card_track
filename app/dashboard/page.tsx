@@ -714,7 +714,7 @@ export default function Dashboard() {
             )}
           </Box>
 
-          {months.map((month, i) => i < 3 ? renderMonth(monthsData[i] ?? null, month) : null)}
+          {months.map((month, i) => i < 5 ? renderMonth(monthsData[i] ?? null, month) : null)}
         </Box>
       </Container>
 
