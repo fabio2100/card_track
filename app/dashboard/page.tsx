@@ -682,6 +682,7 @@ export default function Dashboard() {
                     valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
                   }));
 
+
                   return (
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
                       <Box sx={{ mt: 2, minWidth: 500, overflowX: 'auto' }}>
@@ -697,7 +698,8 @@ export default function Dashboard() {
 
                               const item = dataset.find((entry) => entry.cycleName === value);
                               const total = Number(item?.total ?? 0);
-                              return `${String(value)} : $${total.toLocaleString('en-US')}`;
+                              const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
+                              return `${String(value)} : $${total.toLocaleString('en-US')} (${pct}%)`;
                             },
                           }]}
                           yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
