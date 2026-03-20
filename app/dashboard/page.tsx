@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Accordion,
   AccordionDetails,
@@ -44,7 +45,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useRouter } from 'next/navigation';
+import type { ApexOptions } from 'apexcharts';
 import dayjs, { Dayjs } from 'dayjs';
+
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface Ingreso {
   id: number;
@@ -698,6 +702,70 @@ export default function Dashboard() {
                   const cy = svgH / 2;
                   const funnelColors = ['#1976d2', '#1565c0', '#0d47a1', '#1e88e5', '#42a5f5', '#90caf9'];
                   const funnelHeights = funnelData.map((d) => Math.max((d.pct / 100) * maxH, 12));
+                  const apexFunnelOptions: ApexOptions = {
+                    chart: {
+                      type: 'bar',
+                      background: 'transparent',
+                      toolbar: { show: false },
+                    },
+                    colors: funnelColors,
+                    stroke: {
+                      colors: ['#1a1a1a'],
+                      width: 2,
+                    },
+                    legend: {
+                      show: false,
+                    },
+                    tooltip: {
+                      theme: 'dark',
+                      y: {
+                        formatter: (value) => `${Number(value).toLocaleString('en-US')}%`,
+                      },
+                    },
+                    xaxis: {
+                      labels: {
+                        formatter: (value) => `${Math.round(Number(value))}%`,
+                      },
+                    },
+                    yaxis: {
+                      labels: {
+                        style: {
+                          colors: '#ffffff',
+                        },
+                      },
+                    },
+                    plotOptions: {
+                      bar: {
+                        horizontal: true,
+                        distributed: true,
+                        isFunnel: true,
+                        barHeight: '85%',
+                        dataLabels: {
+                          position: 'center',
+                        },
+                      },
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      formatter: (value, opts) => {
+                        const label = funnelData[opts?.dataPointIndex ?? 0]?.label ?? '';
+                        return `${label}: ${Math.round(Number(value))}%`;
+                      },
+                      style: {
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        colors: ['#ffffff'],
+                      },
+                      dropShadow: { enabled: false },
+                    },
+                    grid: {
+                      borderColor: 'rgba(255, 255, 255, 0.12)',
+                      xaxis: { lines: { show: false } },
+                    },
+                    theme: {
+                      mode: 'dark',
+                    },
+                  };
 
                   return (
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
@@ -726,67 +794,36 @@ export default function Dashboard() {
                         />
                       </Box>
 
-                      {/* Funnel chart — pct of deudaTotal per cycle, sorted largest first */}
-                      <Box sx={{
-                        mt: 3,
-                        minWidth: 500,
-                        maxWidth: 700,
-                        overflowX: 'auto',
-                        mx: 'auto',
-                        p: 2,
-                        border: '1px solid',
-                        borderColor: 'grey.400',
-                        borderRadius: 2,
-                        backgroundColor: '#1a1a1a'
-                      }}>
-                        <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      <Box
+                        sx={{
+                          mt: 3,
+                          minWidth: 500,
+                          overflowX: 'auto',
+                          mx: 'auto',
+                          p: 2,
+
+                        }}
+                      >
+                        <Typography variant="body1" sx={{ mt: 0.5, color: 'white' }}>
                           Distribución porcentual por ciclo
                         </Typography>
-                        <svg
-                          width="100%"
-                          viewBox={`0 0 ${svgW} ${svgH}`}
-                          style={{ overflow: 'visible', display: 'block' }}
-                        >
-                          {funnelData.map((d, i) => {
-                            const leftH = funnelHeights[i];
-                            const rightH = i + 1 < funnelHeights.length ? funnelHeights[i + 1] : funnelHeights[i];
-                            const x = i * segW;
-                            const points = [
-                              `${x},${cy - leftH / 2}`,
-                              `${x + segW},${cy - rightH / 2}`,
-                              `${x + segW},${cy + rightH / 2}`,
-                              `${x},${cy + leftH / 2}`,
-                            ].join(' ');
-                            return (
-                              <g key={i}>
-                                <polygon
-                                  points={points}
-                                  fill={funnelColors[i % funnelColors.length]}
-                                  opacity={0.88}
-                                />
-                                <text
-                                  x={x + segW / 2}
-                                  y={cy + 5}
-                                  textAnchor="middle"
-                                  fill="white"
-                                  fontSize={11}
-                                  fontWeight="bold"
-                                >
-                                  {d.label}
-                                </text>
-                                <text
-                                  x={x + segW / 2}
-                                  y={cy + 18}
-                                  textAnchor="middle"
-                                  fill="white"
-                                  fontSize={11}
-                                >
-                                  {d.pct}%
-                                </text>
-                              </g>
-                            );
-                          })}
-                        </svg>
+                        <Box sx={{ mt: 2 }}>
+                          <ReactApexChart
+                            type="bar"
+                            height={360}
+                            options={apexFunnelOptions}
+                            series={[
+                              {
+                                name: 'Porcentaje',
+                                data: funnelData.map((d) => ({
+                                  x: d.label,
+                                  y: d.pct,
+                                  fillColor: funnelColors[funnelData.indexOf(d) % funnelColors.length],
+                                })),
+                              },
+                            ]}
+                          />
+                        </Box>
                       </Box>
                     </Box>
                   );
