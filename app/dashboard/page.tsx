@@ -693,15 +693,8 @@ export default function Dashboard() {
                       const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
                       return { label: String(entry.cycleName), pct };
                     })
-                    .sort((a, b) => b.pct - a.pct);
 
-                  const svgW = 500;
-                  const svgH = 120;
-                  const segW = svgW / (funnelData.length || 1);
-                  const maxH = svgH * 0.85;
-                  const cy = svgH / 2;
                   const funnelColors = ['#1976d2', '#1565c0', '#0d47a1', '#1e88e5', '#42a5f5', '#90caf9'];
-                  const funnelHeights = funnelData.map((d) => Math.max((d.pct / 100) * maxH, 12));
                   const apexFunnelOptions: ApexOptions = {
                     chart: {
                       type: 'bar',
