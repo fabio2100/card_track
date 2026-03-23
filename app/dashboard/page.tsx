@@ -18,10 +18,14 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  FormControl,
   FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
+  InputLabel,
+  MenuItem,
+  Select,
   LinearProgress,
   Skeleton,
   Table,
@@ -124,11 +128,15 @@ export default function Dashboard() {
   const [deletePaymentTarget, setDeletePaymentTarget] = useState<Payment | null>(null);
   const [deletePaymentLoading, setDeletePaymentLoading] = useState(false);
 
+  // All cards (for selects)
+  const [allCards, setAllCards] = useState<{ id: number; description: string; last_four: string }[]>([]);
+
   // Edit modal (payment)
   const [editPaymentTarget, setEditPaymentTarget] = useState<Payment | null>(null);
   const [editPaymentName, setEditPaymentName] = useState('');
   const [editPaymentFecha, setEditPaymentFecha] = useState<Dayjs | null>(null);
   const [editPaymentMonto, setEditPaymentMonto] = useState('');
+  const [editPaymentCardId, setEditPaymentCardId] = useState<number | null>(null);
   const [editPaymentLoading, setEditPaymentLoading] = useState(false);
 
   // Edit modal (card cycle)
@@ -178,11 +186,19 @@ export default function Dashboard() {
     fetchAll();
   }, [fetchAll]);
 
+  useEffect(() => {
+    fetch('/api/cards')
+      .then((r) => r.json())
+      .then((data) => { if (data.success) setAllCards(data.data); })
+      .catch(() => {});
+  }, []);
+
   const openEditPayment = (pmt: Payment) => {
     setEditPaymentTarget(pmt);
     setEditPaymentName(pmt.name ?? '');
     setEditPaymentFecha(dayjs(pmt.created_at));
     setEditPaymentMonto(Number(pmt.mount).toLocaleString('en-US'));
+    setEditPaymentCardId(pmt.card_id);
   };
 
   const openEditCycle = (card: CardData) => {
@@ -238,6 +254,7 @@ export default function Dashboard() {
         name: editPaymentName || null,
         created_at: editPaymentFecha.toISOString(),
         mount: parseInt(editPaymentMonto.replace(/,/g, '')),
+        card_id: editPaymentCardId,
       }),
     });
     setEditPaymentTarget(null);
@@ -879,6 +896,20 @@ export default function Dashboard() {
             value={editPaymentName}
             onChange={(e) => setEditPaymentName(e.target.value)}
           />
+          <FormControl fullWidth>
+            <InputLabel>Tarjeta</InputLabel>
+            <Select
+              label="Tarjeta"
+              value={editPaymentCardId ?? ''}
+              onChange={(e) => setEditPaymentCardId(Number(e.target.value))}
+            >
+              {allCards.map((card) => (
+                <MenuItem key={card.id} value={card.id}>
+                  {card.description}{card.last_four ? ` (${card.last_four})` : ''}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Fecha"

@@ -5,7 +5,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, created_at, mount } = body;
+    const { name, created_at, mount, card_id } = body;
 
     if (!mount || !created_at) {
       return NextResponse.json(
@@ -15,8 +15,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const result = await query(
-      'UPDATE payments SET name = $1, created_at = $2, mount = $3 WHERE id = $4 RETURNING *',
-      [name ?? null, created_at, mount, id]
+      'UPDATE payments SET name = $1, created_at = $2, mount = $3, card_id = COALESCE($5, card_id) WHERE id = $4 RETURNING *',
+      [name ?? null, created_at, mount, id, card_id ?? null]
     );
 
     if (result.rowCount === 0) {
