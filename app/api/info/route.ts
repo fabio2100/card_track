@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const mostrarPagados = searchParams.get('mostrarPagados') === 'true';
+    const mostrarConsumosPropios = searchParams.get('mostrarConsumosPropios') !== 'false';
     const [deudaResult, sueldoResult] = await Promise.all([
       query(`
         SELECT COALESCE(SUM(p.mount), 0) AS deuda_total
@@ -16,6 +17,7 @@ export async function GET(request: Request) {
           AND p.created_at < cc.end_date
         WHERE 1=1
         ${!mostrarPagados ? 'AND p.pagado = false' : ''}
+        ${!mostrarConsumosPropios ? 'AND p.consumo_propio = true' : ''}
       `),
       query(`
         SELECT monto
