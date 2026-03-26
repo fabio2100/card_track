@@ -60,7 +60,8 @@ export async function GET(request: Request) {
           p.created_at,
           p.name,
           p.installment,
-          p.mount
+          p.mount,
+          p.consumo_propio
         FROM payments p
         JOIN card_cycles cc
           ON cc.card_id = p.card_id

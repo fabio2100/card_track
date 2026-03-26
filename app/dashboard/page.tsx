@@ -68,6 +68,7 @@ interface Payment {
   name: string | null;
   installment: string | null;
   mount: number;
+  consumo_propio: boolean;
 }
 
 interface CardData {
@@ -137,6 +138,7 @@ export default function Dashboard() {
   const [editPaymentFecha, setEditPaymentFecha] = useState<Dayjs | null>(null);
   const [editPaymentMonto, setEditPaymentMonto] = useState('');
   const [editPaymentCardId, setEditPaymentCardId] = useState<number | null>(null);
+  const [editPaymentConsumoPropio, setEditPaymentConsumoPropio] = useState(true);
   const [editPaymentLoading, setEditPaymentLoading] = useState(false);
 
   // Edit modal (card cycle)
@@ -199,6 +201,7 @@ export default function Dashboard() {
     setEditPaymentFecha(dayjs(pmt.created_at));
     setEditPaymentMonto(Number(pmt.mount).toLocaleString('en-US'));
     setEditPaymentCardId(pmt.card_id);
+    setEditPaymentConsumoPropio(pmt.consumo_propio);
   };
 
   const openEditCycle = (card: CardData) => {
@@ -255,6 +258,7 @@ export default function Dashboard() {
         created_at: editPaymentFecha.toISOString(),
         mount: parseInt(editPaymentMonto.replace(/,/g, '')),
         card_id: editPaymentCardId,
+        consumo_propio: editPaymentConsumoPropio,
       }),
     });
     setEditPaymentTarget(null);
@@ -928,6 +932,15 @@ export default function Dashboard() {
               setEditPaymentMonto(raw ? parseInt(raw).toLocaleString('en-US') : '');
             }}
             InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={editPaymentConsumoPropio}
+                onChange={(e) => setEditPaymentConsumoPropio(e.target.checked)}
+              />
+            }
+            label="Consumo propio"
           />
         </DialogContent>
         <DialogActions>
