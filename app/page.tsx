@@ -50,6 +50,8 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [alert]);
 
+  const [consumoPropio, setConsumoPropio] = useState(true);
+
   // Dollar mode
   const [esDolar, setEsDolar] = useState(false);
   const [valorDolar, setValorDolar] = useState<string>('1500');
@@ -134,6 +136,7 @@ export default function Home() {
         mount: rawMount,
         date: date.toISOString(),
         name,
+        consumo_propio: consumoPropio,
       };
 
       // If installments, use different endpoint and add extra fields
@@ -173,6 +176,7 @@ export default function Home() {
         setTotalPesos('');
         setUsingDefaultDolar(false);
         setDolarFetched(false);
+        setConsumoPropio(true);
       } else {
         setAlert({ type: 'error', message: data.error || 'Error al registrar el pago' });
       }
@@ -354,6 +358,17 @@ export default function Home() {
               />
             </Box>
           )}
+
+          <FormControlLabel
+            sx={{ mb: 2 }}
+            control={
+              <Checkbox
+                checked={consumoPropio}
+                onChange={(e) => setConsumoPropio(e.target.checked)}
+              />
+            }
+            label="Consumo propio"
+          />
 
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
             <Button

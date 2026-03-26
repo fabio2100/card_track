@@ -4,10 +4,10 @@ import { getClient } from '@/lib/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { card_id, date, installments_count, amount_type, mount, name } = body;
+    const { card_id, date, installments_count, amount_type, mount, name, consumo_propio } = body;
 
     // Validate required fields
-    if (!card_id || !date || !installments_count || !mount || !amount_type) {
+    if (!card_id || !date || !installments_count || !mount || !amount_type ) {
       return NextResponse.json(
         { success: false, error: 'All fields are required' },
         { status: 400 }
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
       const insertedPayments = [];
       for (const payment of payments) {
         const result = await client.query(
-          'INSERT INTO payments (mount, card_id, created_at, installment, name) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [payment.mount, payment.card_id, payment.created_at, payment.installment, payment.name]
+          'INSERT INTO payments (mount, card_id, created_at, installment, name, consumo_propio) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+          [payment.mount, payment.card_id, payment.created_at, payment.installment, payment.name, consumo_propio ?? true]
         );
         insertedPayments.push(result.rows[0]);
       }
