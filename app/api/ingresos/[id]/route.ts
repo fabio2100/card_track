@@ -5,7 +5,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, created_at, monto } = body;
+    const { name, created_at, monto, ingreso_propio } = body;
 
     if (!name || !created_at || !monto) {
       return NextResponse.json(
@@ -15,8 +15,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const result = await query(
-      'UPDATE ingresos SET name = $1, created_at = $2, monto = $3 WHERE id = $4 RETURNING *',
-      [name, created_at, monto, id]
+      'UPDATE ingresos SET name = $1, created_at = $2, monto = $3, ingreso_propio = COALESCE($5, ingreso_propio) WHERE id = $4 RETURNING *',
+      [name, created_at, monto, id, ingreso_propio ?? null]
     );
 
     if (result.rowCount === 0) {

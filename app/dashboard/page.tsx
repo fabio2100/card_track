@@ -59,6 +59,7 @@ interface Ingreso {
   created_at: string;
   name: string;
   monto: number;
+  ingreso_propio: boolean;
 }
 
 interface Payment {
@@ -124,6 +125,7 @@ export default function Dashboard() {
   const [editName, setEditName] = useState('');
   const [editFecha, setEditFecha] = useState<Dayjs | null>(null);
   const [editMonto, setEditMonto] = useState('');
+  const [editIngresoPropio, setEditIngresoPropio] = useState(true);
   const [editLoading, setEditLoading] = useState(false);
 
   // Delete dialog (payment)
@@ -272,6 +274,7 @@ export default function Dashboard() {
     setEditName(ing.name);
     setEditFecha(dayjs(ing.created_at));
     setEditMonto(Number(ing.monto).toLocaleString('en-US'));
+    setEditIngresoPropio(ing.ingreso_propio);
   };
 
   const handleDelete = async () => {
@@ -293,6 +296,7 @@ export default function Dashboard() {
         name: editName,
         created_at: editFecha.toISOString(),
         monto: parseInt(editMonto.replace(/,/g, '')),
+        ingreso_propio: editIngresoPropio,
       }),
     });
     setEditTarget(null);
@@ -327,10 +331,12 @@ export default function Dashboard() {
     const cards = data?.cards ?? [];
     const ingresos = data?.ingresos ?? [];
     const totalIngresos = data?.totalIngresos ?? 0;
+    const totalIngresosPropios = ingresos.filter((i) => i.ingreso_propio).reduce((sum, i) => sum + Number(i.monto), 0);
+    const displayIngresos = mostrarConsumosPropios ? totalIngresos : totalIngresosPropios;
     const lastSueldo = data?.lastSueldo ?? null;
     const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
     if(totalTarjetas === 0) return null;
-    const salaryBase = totalIngresos > 0 ? totalIngresos : lastSueldo;
+    const salaryBase = displayIngresos > 0 ? displayIngresos : lastSueldo;
     const pct =
       salaryBase && salaryBase > 0
         ? Math.round((totalTarjetas * 100) / salaryBase)
@@ -378,7 +384,7 @@ export default function Dashboard() {
                     <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
                       <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
                     </Typography>
-                    {totalIngresos === 0 && lastSueldo !== null && (
+                    {displayIngresos === 0 && lastSueldo !== null && (
                       <Typography variant="caption" color="text.secondary">
                         Usando salario previo
                       </Typography>
@@ -541,7 +547,11 @@ export default function Dashboard() {
             <Skeleton width={180} height={56} />
           ) : (
             <Typography variant="h4" component="p" sx={{ mb: 2, fontWeight: 700 }}>
-              ${totalIngresos.toLocaleString('en-US')}
+              ${displayIngresos.toLocaleString('en-US')}{displayIngresos !== totalIngresos && (
+                <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                  (total: ${totalIngresos.toLocaleString('en-US')})
+                </Typography>
+              )}
             </Typography>
           )}
 
@@ -559,6 +569,7 @@ export default function Dashboard() {
                     <TableCell>Fecha</TableCell>
                     <TableCell>Nombre</TableCell>
                     <TableCell align="right">Monto</TableCell>
+                    <TableCell align="center">Propio</TableCell>
                     <TableCell />
                   </TableRow>
                 </TableHead>
@@ -574,6 +585,9 @@ export default function Dashboard() {
                       <TableCell>{ing.name}</TableCell>
                       <TableCell align="right">
                         ${Number(ing.monto).toLocaleString('en-US')}
+                      </TableCell>
+                      <TableCell align="center">
+                        {ing.ingreso_propio ? <CheckIcon fontSize="small" color="success" /> : <CloseIcon fontSize="small" color="error" />}
                       </TableCell>
                       <TableCell align="right" sx={{ whiteSpace: 'nowrap', p: 0.5 }}>
                         <IconButton size="small" onClick={() => openEdit(ing)}>
@@ -1041,6 +1055,15 @@ export default function Dashboard() {
               setEditMonto(raw ? parseInt(raw).toLocaleString('en-US') : '');
             }}
             InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={editIngresoPropio}
+                onChange={(e) => setEditIngresoPropio(e.target.checked)}
+              />
+            }
+            label="Ingreso propio"
           />
         </DialogContent>
         <DialogActions>

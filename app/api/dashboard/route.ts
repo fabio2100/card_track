@@ -43,7 +43,7 @@ export async function GET(request: Request) {
         ORDER BY c.description
       `, [monthDate]),
       query(`
-        SELECT id, created_at, name, monto
+        SELECT id, created_at, name, monto, ingreso_propio
         FROM ingresos
         WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', $1::date)
         ORDER BY created_at DESC

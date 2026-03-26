@@ -4,7 +4,7 @@ import { query } from '@/lib/db';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, created_at, monto } = body;
+    const { name, created_at, monto, ingreso_propio } = body;
 
     if (!name || !created_at || !monto) {
       return NextResponse.json(
@@ -14,8 +14,8 @@ export async function POST(request: Request) {
     }
 
     const result = await query(
-      'INSERT INTO ingresos (name, created_at, monto) VALUES ($1, $2, $3) RETURNING *',
-      [name, created_at, monto]
+      'INSERT INTO ingresos (name, created_at, monto, ingreso_propio) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, created_at, monto, ingreso_propio ?? true]
     );
 
     return NextResponse.json({

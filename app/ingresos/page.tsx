@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import {
   Box,
+  Checkbox,
   Container,
+  FormControlLabel,
   IconButton,
   InputAdornment,
   TextField,
@@ -25,6 +27,7 @@ export default function Ingresos() {
   const [monto, setMonto] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [ingresoPropio, setIngresoPropio] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +48,7 @@ export default function Ingresos() {
           name: nombre,
           created_at: fecha.toISOString(),
           monto: parseInt(monto.replace(/,/g, '')),
+          ingreso_propio: ingresoPropio,
         }),
       });
 
@@ -55,6 +59,7 @@ export default function Ingresos() {
         setNombre('');
         setFecha(dayjs());
         setMonto('');
+        setIngresoPropio(true);
       } else {
         setAlert({ type: 'error', message: data.error || 'Error al registrar el ingreso' });
       }
@@ -122,6 +127,17 @@ export default function Ingresos() {
             InputProps={{
               startAdornment: <InputAdornment position="start">$</InputAdornment>,
             }}
+          />
+
+          <FormControlLabel
+            sx={{ mb: 2 }}
+            control={
+              <Checkbox
+                checked={ingresoPropio}
+                onChange={(e) => setIngresoPropio(e.target.checked)}
+              />
+            }
+            label="Ingreso propio"
           />
 
           <Button
