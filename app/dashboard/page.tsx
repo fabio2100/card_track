@@ -679,6 +679,16 @@ export default function Dashboard() {
                     {deudaEnSueldos !== null ? deudaEnSueldos.toLocaleString('en-US') : '—'}
                   </strong>
                 </Typography>
+                {deudaEnSueldos !== null && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      color={deudaEnSueldos < 0.5 ? 'success' : deudaEnSueldos <= 1 ? 'warning' : 'error'}
+                      value={Math.min(deudaEnSueldos * 100, 100)}
+                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                    />
+                  </Box>
+                )}
                 {!loading && (() => {
                   const availableMonths = monthsData.filter(
                     (month): month is MonthData =>
