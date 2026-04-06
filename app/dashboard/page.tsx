@@ -475,7 +475,6 @@ export default function Dashboard() {
                       </Box>
                       
                       <Divider sx={{ my: 1 }} />
-                      {console.log(card.payments)}
                       {card.payments.length > 0 && (
                         <Accordion
                           disableGutters
