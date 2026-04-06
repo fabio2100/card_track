@@ -35,6 +35,7 @@ import {
   TableRow,
   TextField,
   Typography,
+  Tab,
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { BarChart } from '@mui/x-charts/BarChart';
@@ -474,6 +475,7 @@ export default function Dashboard() {
                       </Box>
                       
                       <Divider sx={{ my: 1 }} />
+                      {console.log(card.payments)}
                       {card.payments.length > 0 && (
                         <Accordion
                           disableGutters
@@ -493,6 +495,8 @@ export default function Dashboard() {
                                   <TableCell sx={{ py: 0.5 }}>Fecha</TableCell>
                                   <TableCell sx={{ py: 0.5 }}>Nombre</TableCell>
                                   <TableCell align="right" sx={{ py: 0.5 }}>Monto</TableCell>
+                                  <TableCell align="right" sx={{ py: 0.5 }}>Propio</TableCell>
+                                  <TableCell align="right" sx={{ py: 0.5 }}>Acciones</TableCell>
                                   <TableCell />
                                 </TableRow>
                               </TableHead>
@@ -510,6 +514,9 @@ export default function Dashboard() {
                                     </TableCell>
                                     <TableCell align="right" sx={{ py: 0.5 }}>
                                       ${Number(pmt.mount).toLocaleString('en-US')}
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      {pmt.consumo_propio ? <CheckIcon fontSize="small" color="success" /> : <CloseIcon fontSize="small" color="error" />}
                                     </TableCell>
                                     <TableCell align="right" sx={{ whiteSpace: 'nowrap', p: 0.25 }}>
                                       <IconButton size="small" onClick={() => openEditPayment(pmt)}>
