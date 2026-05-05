@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Accordion,
@@ -99,6 +99,42 @@ function buildMonthLabel(month: string): string {
   const d = new Date(`${month}-15T12:00:00`);
   const label = d.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function useCountUp(target: number, duration = 700): number {
+  const [value, setValue] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const currentRef = useRef(0);
+
+  useEffect(() => {
+    const from = currentRef.current;
+    const to = target;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const cur = from + (to - from) * eased;
+      currentRef.current = cur;
+      setValue(cur);
+      if (p < 1) rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+
+  return value;
+}
+
+function AnimatedNumber({
+  value,
+  format,
+}: {
+  value: number;
+  format?: (v: number) => string;
+}) {
+  const animated = useCountUp(value);
+  return <>{(format ?? ((v) => Math.round(v).toLocaleString('en-US')))(animated)}</>;
 }
 
 export default function Dashboard() {
@@ -366,11 +402,11 @@ export default function Dashboard() {
               return (
                 <>
                   <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
-                    Total tarjetas: <strong>${totalTarjetas.toLocaleString('en-US')}</strong>
+                    Total tarjetas: <strong>$<AnimatedNumber value={totalTarjetas} /></strong>
                   </Typography>
                   {salaryBase !== null && (
                     <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
-                      Disponible: <strong>${(salaryBase - totalTarjetas).toLocaleString('en-US')}</strong>
+                      Disponible: <strong>$<AnimatedNumber value={salaryBase - totalTarjetas} /></strong>
                     </Typography>
                   )}
                 </>
@@ -383,7 +419,7 @@ export default function Dashboard() {
                 <>
                   <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.5 }}>
                     <Typography variant="h6" component="p" sx={{ color: pctTextColor }}>
-                      <strong>{pct}%</strong>{' '}tarjetas sobre sueldo
+                      <strong><AnimatedNumber value={pct} />%</strong>{' '}tarjetas sobre sueldo
                     </Typography>
                     {displayIngresos === 0 && lastSueldo !== null && (
                       <Typography variant="caption" color="text.secondary">
@@ -450,7 +486,7 @@ export default function Dashboard() {
                         •••• {card.last_four}
                       </Typography>
                       <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
-                        ${Number(card.total_payments).toLocaleString('en-US')}
+                        $<AnimatedNumber value={Number(card.total_payments)} />
                       </Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'stretch' }}>
                         <Box>
@@ -553,9 +589,9 @@ export default function Dashboard() {
             <Skeleton width={180} height={56} />
           ) : (
             <Typography variant="h4" component="p" sx={{ mb: 2, fontWeight: 700 }}>
-              ${displayIngresos.toLocaleString('en-US')}{displayIngresos !== totalIngresos && (
+              $<AnimatedNumber value={displayIngresos} />{displayIngresos !== totalIngresos && (
                 <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                  (total: ${totalIngresos.toLocaleString('en-US')})
+                  (total: $<AnimatedNumber value={totalIngresos} />)
                 </Typography>
               )}
             </Typography>
@@ -676,13 +712,13 @@ export default function Dashboard() {
                 <Typography variant="body1">
                   Deuda total:{' '}
                   <strong>
-                    ${(deudaTotal ?? 0).toLocaleString('en-US')}
+                    $<AnimatedNumber value={deudaTotal ?? 0} />
                   </strong>
                 </Typography>
                 <Typography variant="body1" sx={{ mt: 0.5 }}>
                   Deuda como cantidad de sueldos:{' '}
                   <strong>
-                    {deudaEnSueldos !== null ? deudaEnSueldos.toLocaleString('en-US') : '—'}
+                    {deudaEnSueldos !== null ? <AnimatedNumber value={deudaEnSueldos} format={(v) => (Math.round(v * 100) / 100).toLocaleString('en-US')} /> : '—'}
                   </strong>
                 </Typography>
                 {deudaEnSueldos !== null && (
