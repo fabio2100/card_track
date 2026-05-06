@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Accordion,
@@ -138,21 +138,14 @@ function AnimatedNumber({
 }
 
 export default function Dashboard() {
-  const [mostrarPagados, setMostrarPagados] = useState(false);
   const router = useRouter();
-  const months = useMemo(() => {
-    if (mostrarPagados) {
-      return Array.from({ length: 12 }, (_, i) =>
-        dayjs().subtract(11 - i, 'month').format('YYYY-MM')
-      );
-    }
-    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((offset) =>
-      dayjs().add(offset, 'month').format('YYYY-MM')
-    );
-  }, [mostrarPagados]);
+  const months = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((offset) =>
+    dayjs().add(offset, 'month').format('YYYY-MM')
+  );
 
   const [monthsData, setMonthsData] = useState<(MonthData | null)[]>([null, null, null]);
   const [loading, setLoading] = useState(true);
+  const [mostrarPagados, setMostrarPagados] = useState(false);
   const [mostrarConsumosPropios, setMostrarConsumosPropios] = useState(true);
 
   // Global info
@@ -379,7 +372,7 @@ export default function Dashboard() {
     const displayIngresos = mostrarConsumosPropios ? totalIngresos : totalIngresosPropios;
     const lastSueldo = data?.lastSueldo ?? null;
     const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
-    if(totalTarjetas === 0 && !mostrarPagados) return null;
+    if(totalTarjetas === 0) return null;
     const salaryBase = displayIngresos > 0 ? displayIngresos : lastSueldo;
     const pct =
       salaryBase && salaryBase > 0
@@ -930,7 +923,7 @@ export default function Dashboard() {
             )}
           </Box>
 
-          {months.map((month, i) => renderMonth(monthsData[i] ?? null, month))}
+          {months.map((month, i) => i < 5 ? renderMonth(monthsData[i] ?? null, month) : null)}
         </Box>
       </Container>
 
