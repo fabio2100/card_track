@@ -244,7 +244,7 @@ export default function Dashboard() {
     );
     Promise.all(
       allMonths.map((m) =>
-        fetch(`/api/dashboard?month=${m}&mostrarPagados=true`).then((r) => r.json())
+        fetch(`/api/dashboard?month=${m}&mostrarPagados=true${!mostrarConsumosPropios ? '&mostrarConsumosPropios=false' : ''}`).then((r) => r.json())
       )
     ).then((results) => {
       const data = results
@@ -264,7 +264,7 @@ export default function Dashboard() {
         .filter((d): d is MonthData => d !== null);
       setAllMonthsData(data);
     }).catch(() => {});
-  }, []);
+  }, [mostrarConsumosPropios]);
 
   const openEditPayment = (pmt: Payment) => {
     setEditPaymentTarget(pmt);
