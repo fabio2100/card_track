@@ -45,9 +45,9 @@ export async function GET(request: Request) {
       query(`
         SELECT id, created_at, name, monto, ingreso_propio
         FROM ingresos
-        WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', $1::date)
+        WHERE ($1::date IS NULL OR DATE_TRUNC('month', created_at) = DATE_TRUNC('month', $1::date))
         ORDER BY created_at DESC
-      `, [monthDate]),
+      `, [mostrarPagados ? null : monthDate]),
       query(`
         SELECT monto
         FROM ingresos
@@ -67,13 +67,13 @@ export async function GET(request: Request) {
         FROM payments p
         JOIN card_cycles cc
           ON cc.card_id = p.card_id
-          AND DATE_TRUNC('month', cc.expiration_date) = DATE_TRUNC('month', $1::date)
+          AND ($1::date IS NULL OR DATE_TRUNC('month', cc.expiration_date) = DATE_TRUNC('month', $1::date))
           AND p.created_at >= cc.start_date
           AND p.created_at < cc.end_date
           ${!mostrarPagados ? 'AND p.pagado = false' : ''}
           ${!mostrarConsumosPropios ? 'AND p.consumo_propio = true' : ''}
         ORDER BY p.card_id, p.created_at DESC
-      `, [monthDate]),
+      `, [mostrarPagados ? null : monthDate]),
     ]);
 
     const totalIngresos = ingresosResult.rows.reduce(
