@@ -153,6 +153,9 @@ export default function Dashboard() {
   const [deudaEnSueldos, setDeudaEnSueldos] = useState<number | null>(null);
   const [infoLoading, setInfoLoading] = useState(true);
 
+  // All cycles data (no filters)
+  const [allMonthsData, setAllMonthsData] = useState<MonthData[]>([]);
+
   // Delete dialog (ingreso)
   const [deleteTarget, setDeleteTarget] = useState<Ingreso | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -233,6 +236,34 @@ export default function Dashboard() {
       .then((r) => r.json())
       .then((data) => { if (data.success) setAllCards(data.data); })
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const allMonths = Array.from({ length: 24 }, (_, i) =>
+      dayjs().subtract(12 - i, 'month').format('YYYY-MM')
+    );
+    Promise.all(
+      allMonths.map((m) =>
+        fetch(`/api/dashboard?month=${m}&mostrarPagados=true`).then((r) => r.json())
+      )
+    ).then((results) => {
+      const data = results
+        .map((res, i) =>
+          res.success && res.cards.some((c: CardData) => Number(c.total_payments) > 0)
+            ? ({
+                month: allMonths[i],
+                label: buildMonthLabel(allMonths[i]),
+                cycleName: res.cycle?.name ?? null,
+                cards: res.cards,
+                ingresos: res.ingresos,
+                totalIngresos: res.totalIngresos,
+                lastSueldo: res.lastSueldo ? Number(res.lastSueldo.monto) : null,
+              } as MonthData)
+            : null
+        )
+        .filter((d): d is MonthData => d !== null);
+      setAllMonthsData(data);
+    }).catch(() => {});
   }, []);
 
   const openEditPayment = (pmt: Payment) => {
@@ -916,6 +947,58 @@ export default function Dashboard() {
                           />
                         </Box>
                       </Box>
+
+                      {allMonthsData.length > 0 && (() => {
+                        const allCardMap: Record<number, string> = {};
+                        allMonthsData.forEach((month) => {
+                          month.cards.forEach((card) => {
+                            if (!(card.id in allCardMap)) allCardMap[card.id] = card.description;
+                          });
+                        });
+                        const allSortedCardIds = Object.keys(allCardMap).map(Number).sort((a, b) => a - b);
+                        const allDataset = allMonthsData.map((month) => {
+                          const total = month.cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
+                          const entry: Record<string, number | string> = {
+                            cycleName: month.cycleName ?? month.label,
+                            total,
+                          };
+                          month.cards.forEach((card) => { entry[`card_${card.id}`] = Number(card.total_payments); });
+                          allSortedCardIds.forEach((cardId) => {
+                            if (!(`card_${cardId}` in entry)) entry[`card_${cardId}`] = 0;
+                          });
+                          return entry;
+                        });
+                        const allSeries = allSortedCardIds.map((cardId) => ({
+                          dataKey: `card_${cardId}`,
+                          label: allCardMap[cardId],
+                          stack: 'total',
+                          valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
+                        }));
+                        return (
+                          <Box sx={{ mt: 3, minWidth: 500, overflowX: 'auto' }}>
+                            <Typography variant="body1" sx={{ mt: 0.5, mb: 1 }}>
+                              Todos los ciclos
+                            </Typography>
+                            <BarChart
+                              dataset={allDataset}
+                              xAxis={[{
+                                scaleType: 'band',
+                                dataKey: 'cycleName',
+                                valueFormatter: (value, context) => {
+                                  if (context.location !== 'tooltip') return String(value);
+                                  const item = allDataset.find((e) => e.cycleName === value);
+                                  const total = Number(item?.total ?? 0);
+                                  return `${String(value)} : $${total.toLocaleString('en-US')}`;
+                                },
+                              }]}
+                              yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
+                              series={allSeries}
+                              height={280}
+                              margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
+                            />
+                          </Box>
+                        );
+                      })()}
                     </Box>
                   );
                 })()}
