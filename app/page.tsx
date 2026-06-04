@@ -31,6 +31,13 @@ interface Card {
   last_four: string;
 }
 
+const CARD_ICONS: Record<string, string> = {
+  '8745': '/americanvisa.png',
+  '8506': '/bnavisa.svg',
+  '2854': '/mercadopago.svg',
+  '3577': '/santandervisa.png',
+};
+
 export default function Home() {
   const router = useRouter();
   const [cards, setCards] = useState<Card[]>([]);
@@ -225,7 +232,17 @@ export default function Home() {
             >
               {cards.map((card) => (
                 <MenuItem key={card.id} value={card.id}>
-                  {card.description} - {card.last_four}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {CARD_ICONS[card.last_four] && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={CARD_ICONS[card.last_four]}
+                        alt={card.description}
+                        style={{ width: 64, height: 30, objectFit: 'contain' }}
+                      />
+                    )}
+                    {card.description} - {card.last_four}
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
