@@ -32,7 +32,7 @@ interface Card {
 }
 
 const CARD_ICONS: Record<string, string> = {
-  '8745': '/americanvisa.png',
+  '8745': '/americanlogo.png',
   '8506': '/bnavisa.svg',
   '2854': '/mercadopago.svg',
   '3577': '/santandervisa.png',

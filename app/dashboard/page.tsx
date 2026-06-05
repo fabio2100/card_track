@@ -503,12 +503,27 @@ export default function Dashboard() {
                   <Skeleton variant="rounded" height={140} />
                 </Grid>
               ))
-            : cards.map((card) => (
+            : cards.map((card) =>   (
                 <Grid size={{ xs: 12, sm: 6, md: 4 }} key={card.id}>
                   <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                        <CreditCardIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                        {(() => {
+                          const lf = String(card.last_four).trim();
+                          const cardIconMap: Record<string, { src: string; alt: string }> = {
+                            '8745': { src: '/americanlogo.png', alt: 'American Visa' },
+                            '8506': { src: '/bnavisa.svg', alt: 'BNA Visa' },
+                            '2854': { src: '/mercadopago.svg', alt: 'Mercado Pago' },
+                            '3577': { src: '/santandervisa.png', alt: 'Santander Visa' },
+                          };
+                          const icon = cardIconMap[lf];
+                          return icon ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={icon.src} alt={icon.alt} style={{ width: 32, height: 20, marginRight: 8, objectFit: 'contain' }} />
+                          ) : (
+                            <CreditCardIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                          );
+                        })()}
                         <Typography variant="h6" component="div" noWrap>
                           {card.description}
                         </Typography>
