@@ -33,6 +33,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
   Typography,
   Tab,
@@ -174,6 +175,7 @@ export default function Dashboard() {
 
   // All cards (for selects)
   const [allCards, setAllCards] = useState<{ id: number; description: string; last_four: string }[]>([]);
+  const [paymentSort, setPaymentSort] = useState<Record<number, { orderBy: 'fecha' | 'nombre' | 'monto' | 'propio' | 'pct'; order: 'asc' | 'desc' }>>({});
 
   // Edit modal (payment)
   const [editPaymentTarget, setEditPaymentTarget] = useState<Payment | null>(null);
@@ -273,6 +275,14 @@ export default function Dashboard() {
     setEditPaymentMonto(Number(pmt.mount).toLocaleString('en-US'));
     setEditPaymentCardId(pmt.card_id);
     setEditPaymentConsumoPropio(pmt.consumo_propio);
+  };
+
+  const handlePaymentSort = (cardId: number, orderBy: 'fecha' | 'nombre' | 'monto' | 'propio' | 'pct') => {
+    setPaymentSort((prev) => {
+      const current = prev[cardId];
+      const order = current?.orderBy === orderBy && current.order === 'asc' ? 'desc' : 'asc';
+      return { ...prev, [cardId]: { orderBy, order } };
+    });
   };
 
   const openEditCycle = (card: CardData) => {
@@ -573,16 +583,84 @@ export default function Dashboard() {
                             <Table size="small">
                               <TableHead>
                                 <TableRow>
-                                  <TableCell sx={{ py: 0.5 }}>Fecha</TableCell>
-                                  <TableCell sx={{ py: 0.5 }}>Nombre</TableCell>
-                                  <TableCell align="right" sx={{ py: 0.5 }}>Monto</TableCell>
-                                  <TableCell align="right" sx={{ py: 0.5 }}>Propio</TableCell>
+                                  <TableCell sx={{ py: 0.5 }}>
+                                    <TableSortLabel
+                                      active={paymentSort[card.id]?.orderBy === 'fecha'}
+                                      direction={paymentSort[card.id]?.order ?? 'asc'}
+                                      onClick={() => handlePaymentSort(card.id, 'fecha')}
+                                    >
+                                      Fecha
+                                    </TableSortLabel>
+                                  </TableCell>
+                                  <TableCell sx={{ py: 0.5 }}>
+                                    <TableSortLabel
+                                      active={paymentSort[card.id]?.orderBy === 'nombre'}
+                                      direction={paymentSort[card.id]?.order ?? 'asc'}
+                                      onClick={() => handlePaymentSort(card.id, 'nombre')}
+                                    >
+                                      Nombre
+                                    </TableSortLabel>
+                                  </TableCell>
+                                  <TableCell align="right" sx={{ py: 0.5 }}>
+                                    <TableSortLabel
+                                      active={paymentSort[card.id]?.orderBy === 'monto'}
+                                      direction={paymentSort[card.id]?.order ?? 'asc'}
+                                      onClick={() => handlePaymentSort(card.id, 'monto')}
+                                    >
+                                      Monto
+                                    </TableSortLabel>
+                                  </TableCell>
+                                  <TableCell align="center" sx={{ py: 0.5 }}>
+                                    <TableSortLabel
+                                      active={paymentSort[card.id]?.orderBy === 'propio'}
+                                      direction={paymentSort[card.id]?.order ?? 'asc'}
+                                      onClick={() => handlePaymentSort(card.id, 'propio')}
+                                    >
+                                      Propio
+                                    </TableSortLabel>
+                                  </TableCell>
+                                  <TableCell align="right" sx={{ py: 0.5 }}>
+                                    <TableSortLabel
+                                      active={paymentSort[card.id]?.orderBy === 'pct'}
+                                      direction={paymentSort[card.id]?.order ?? 'asc'}
+                                      onClick={() => handlePaymentSort(card.id, 'pct')}
+                                    >
+                                      %/Total mes
+                                    </TableSortLabel>
+                                  </TableCell>
                                   <TableCell align="right" sx={{ py: 0.5 }}>Acciones</TableCell>
                                   <TableCell />
                                 </TableRow>
                               </TableHead>
                               <TableBody>
-                                {card.payments.map((pmt, idx) => (
+                                {([...card.payments].sort((a, b) => {
+                                  const sortState = paymentSort[card.id] ?? { orderBy: 'fecha', order: 'asc' };
+                                  const multiplier = sortState.order === 'asc' ? 1 : -1;
+                                  const aName = [a.name, a.installment].filter(Boolean).join(' ').toLowerCase();
+                                  const bName = [b.name, b.installment].filter(Boolean).join(' ').toLowerCase();
+                                  const aPropio = a.consumo_propio ? 1 : 0;
+                                  const bPropio = b.consumo_propio ? 1 : 0;
+                                  const aPct = Math.round(a.mount * 100 / totalTarjetas);
+                                  const bPct = Math.round(b.mount * 100 / totalTarjetas);
+                                  let diff = 0;
+                                  switch (sortState.orderBy) {
+                                    case 'nombre':
+                                      diff = aName.localeCompare(bName);
+                                      break;
+                                    case 'monto':
+                                      diff = Number(a.mount) - Number(b.mount);
+                                      break;
+                                    case 'propio':
+                                      diff = aPropio - bPropio;
+                                      break;
+                                    case 'pct':
+                                      diff = aPct - bPct;
+                                      break;
+                                    default:
+                                      diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                                  }
+                                  return diff * multiplier;
+                                })).map((pmt, idx) => (
                                   <TableRow key={idx}>
                                     <TableCell sx={{ py: 0.5 }}>
                                       {new Date(pmt.created_at).toLocaleDateString('es-AR', {
@@ -591,13 +669,16 @@ export default function Dashboard() {
                                       })}
                                     </TableCell>
                                     <TableCell sx={{ py: 0.5 }}>
-                                      {[pmt.name, pmt.installment, `${Math.round(pmt.mount*100/totalTarjetas)}%`].filter(Boolean).join(' ')  || '—'}
+                                      {[pmt.name, pmt.installment].filter(Boolean).join(' ')  || '—'}
                                     </TableCell>
                                     <TableCell align="right" sx={{ py: 0.5 }}>
                                       ${Number(pmt.mount).toLocaleString('en-US')}
                                     </TableCell>
                                     <TableCell align="center">
                                       {pmt.consumo_propio ? <CheckIcon fontSize="small" color="success" /> : <CloseIcon fontSize="small" color="error" />}
+                                    </TableCell>
+                                    <TableCell align="center">
+                                      {Math.round(pmt.mount*100/totalTarjetas)}%
                                     </TableCell>
                                     <TableCell align="right" sx={{ whiteSpace: 'nowrap', p: 0.25 }}>
                                       <IconButton size="small" onClick={() => openEditPayment(pmt)}>
