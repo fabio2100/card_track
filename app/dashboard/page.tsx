@@ -543,6 +543,7 @@ export default function Dashboard() {
                       </Typography>
                       <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
                         $<AnimatedNumber value={Number(card.total_payments)} />
+                        <AnimatedNumber value={Number(card.total_payments)} format={(v) => ` (${Math.round((v / totalTarjetas) * 100)}%)`} />
                       </Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'stretch' }}>
                         <Box>
