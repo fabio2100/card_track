@@ -591,7 +591,7 @@ export default function Dashboard() {
                                       })}
                                     </TableCell>
                                     <TableCell sx={{ py: 0.5 }}>
-                                      {[pmt.name, pmt.installment].filter(Boolean).join(' ')  || '—'}
+                                      {[pmt.name, pmt.installment, `${Math.round(pmt.mount*100/totalTarjetas)}%`].filter(Boolean).join(' ')  || '—'}
                                     </TableCell>
                                     <TableCell align="right" sx={{ py: 0.5 }}>
                                       ${Number(pmt.mount).toLocaleString('en-US')}
