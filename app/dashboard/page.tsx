@@ -51,6 +51,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useRouter } from 'next/navigation';
 import type { ApexOptions } from 'apexcharts';
@@ -151,6 +152,7 @@ export default function Dashboard() {
   const [mostrarPagados, setMostrarPagados] = useState(false);
   const [mostrarConsumosPropios, setMostrarConsumosPropios] = useState(true);
   const [porcentajeMode, setPorcentajeMode] = useState<'consumo' | 'ingresos'>('consumo');
+  const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
   // Global info
   const [deudaTotal, setDeudaTotal] = useState<number | null>(null);
@@ -806,38 +808,69 @@ export default function Dashboard() {
               Dashboard
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2, alignItems: 'center' }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={mostrarPagados}
-                  onChange={(e) => setMostrarPagados(e.target.checked)}
-                />
-              }
-              label="Mostrar pagados"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={mostrarConsumosPropios}
-                  onChange={(e) => setMostrarConsumosPropios(e.target.checked)}
-                />
-              }
-              label="Mostrar consumos no propios"
-            />
-            <ToggleButtonGroup
-              value={porcentajeMode}
-              exclusive
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 1,
+              alignItems: 'center',
+              position: 'fixed',
+              top: 96,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 20,
+              width: 'min(calc(100% - 32px), 1200px)',
+              backgroundColor: 'background.paper',
+              py: 1,
+              px: 2,
+              boxShadow: (theme) => theme.shadows[1],
+              borderRadius: 1,
+              minHeight: 48,
+            }}
+          >
+            <IconButton
               size="small"
-              onChange={(_, value) => {
-                if (value) setPorcentajeMode(value);
-              }}
-              sx={{ ml: 1 }}
+              onClick={() => setFiltersCollapsed((prev) => !prev)}
+              sx={{ position: 'absolute', top: 6, right: 6 }}
             >
-              <ToggleButton value="consumo">Consumo</ToggleButton>
-              <ToggleButton value="ingresos">Ingresos</ToggleButton>
-            </ToggleButtonGroup>
+              {filtersCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+            </IconButton>
+            {!filtersCollapsed && (
+              <>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={mostrarPagados}
+                      onChange={(e) => setMostrarPagados(e.target.checked)}
+                    />
+                  }
+                  label="Mostrar pagados"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={mostrarConsumosPropios}
+                      onChange={(e) => setMostrarConsumosPropios(e.target.checked)}
+                    />
+                  }
+                  label="Mostrar consumos no propios"
+                />
+                <ToggleButtonGroup
+                  value={porcentajeMode}
+                  exclusive
+                  size="small"
+                  onChange={(_, value) => {
+                    if (value) setPorcentajeMode(value);
+                  }}
+                  sx={{ ml: 1 }}
+                >
+                  <ToggleButton value="consumo">Consumo</ToggleButton>
+                  <ToggleButton value="ingresos">Ingresos</ToggleButton>
+                </ToggleButtonGroup>
+              </>
+            )}
           </Box>
+          <Box sx={{ height: 72 }} />
 
           {/* Info section */}
           <Box
