@@ -420,6 +420,7 @@ export default function Dashboard() {
     const totalTarjetas = cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
     if(totalTarjetas === 0) return null;
     const salaryBase = displayIngresos > 0 ? displayIngresos : lastSueldo;
+    const ingresosReference = porcentajeMode === 'ingresos' ? (salaryBase && salaryBase > 0 ? salaryBase : 1) : totalTarjetas;
     const pct =
       salaryBase && salaryBase > 0
         ? Math.round((totalTarjetas * 100) / salaryBase)
@@ -551,7 +552,7 @@ export default function Dashboard() {
                         <AnimatedNumber
                           value={Number(card.total_payments)}
                           format={(v) => {
-                            const reference = porcentajeMode === 'ingresos' ? totalIngresos : totalTarjetas;
+                            const reference = porcentajeMode === 'ingresos' ? ingresosReference : totalTarjetas;
                             return ` (${Math.round((v / (reference || 1)) * 100)}%)`;
                           }}
                         />
@@ -652,7 +653,7 @@ export default function Dashboard() {
                                   const bName = [b.name, b.installment].filter(Boolean).join(' ').toLowerCase();
                                   const aPropio = a.consumo_propio ? 1 : 0;
                                   const bPropio = b.consumo_propio ? 1 : 0;
-                                  const reference = porcentajeMode === 'ingresos' ? (totalIngresos || 1) : (totalTarjetas || 1);
+                                  const reference = porcentajeMode === 'ingresos' ? ingresosReference : (totalTarjetas || 1);
                                   const aPct = Math.round(a.mount * 100 / reference);
                                   const bPct = Math.round(b.mount * 100 / reference);
                                   let diff = 0;
@@ -691,7 +692,7 @@ export default function Dashboard() {
                                       {pmt.consumo_propio ? <CheckIcon fontSize="small" color="success" /> : <CloseIcon fontSize="small" color="error" />}
                                     </TableCell>
                                     <TableCell align="center">
-                                      {Math.round(pmt.mount * 100 / (porcentajeMode === 'ingresos' ? (totalIngresos || 1) : (totalTarjetas || 1)))}%
+                                      {Math.round(pmt.mount * 100 / (porcentajeMode === 'ingresos' ? ingresosReference : (totalTarjetas || 1)))}%
                                     </TableCell>
                                     <TableCell align="right" sx={{ whiteSpace: 'nowrap', p: 0.25 }}>
                                       <IconButton size="small" onClick={() => openEditPayment(pmt)}>
