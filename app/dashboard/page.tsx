@@ -35,6 +35,8 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   Tab,
 } from '@mui/material';
@@ -148,6 +150,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [mostrarPagados, setMostrarPagados] = useState(false);
   const [mostrarConsumosPropios, setMostrarConsumosPropios] = useState(true);
+  const [porcentajeMode, setPorcentajeMode] = useState<'consumo' | 'ingresos'>('consumo');
 
   // Global info
   const [deudaTotal, setDeudaTotal] = useState<number | null>(null);
@@ -514,7 +517,7 @@ export default function Dashboard() {
                 </Grid>
               ))
             : cards.map((card) =>   (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={card.id}>
+                <Grid size={{ xs: 12, sm: 6, md: 6 }} key={card.id}>
                   <Card variant="outlined" sx={{ height: '100%' }}>
                     <CardContent>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -543,7 +546,13 @@ export default function Dashboard() {
                       </Typography>
                       <Typography variant="body1" fontWeight={700} sx={{ mb: 0.5 }}>
                         $<AnimatedNumber value={Number(card.total_payments)} />
-                        <AnimatedNumber value={Number(card.total_payments)} format={(v) => ` (${Math.round((v / totalTarjetas) * 100)}%)`} />
+                        <AnimatedNumber
+                          value={Number(card.total_payments)}
+                          format={(v) => {
+                            const reference = porcentajeMode === 'ingresos' ? totalIngresos : totalTarjetas;
+                            return ` (${Math.round((v / (reference || 1)) * 100)}%)`;
+                          }}
+                        />
                       </Typography>
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'stretch' }}>
                         <Box>
@@ -626,7 +635,7 @@ export default function Dashboard() {
                                       direction={paymentSort[card.id]?.order ?? 'asc'}
                                       onClick={() => handlePaymentSort(card.id, 'pct')}
                                     >
-                                      %/Total mes
+                                      {porcentajeMode === 'ingresos' ? '%/Ingresos' : '%/Total mes'}
                                     </TableSortLabel>
                                   </TableCell>
                                   <TableCell align="right" sx={{ py: 0.5 }}>Acciones</TableCell>
@@ -641,8 +650,9 @@ export default function Dashboard() {
                                   const bName = [b.name, b.installment].filter(Boolean).join(' ').toLowerCase();
                                   const aPropio = a.consumo_propio ? 1 : 0;
                                   const bPropio = b.consumo_propio ? 1 : 0;
-                                  const aPct = Math.round(a.mount * 100 / totalTarjetas);
-                                  const bPct = Math.round(b.mount * 100 / totalTarjetas);
+                                  const reference = porcentajeMode === 'ingresos' ? (totalIngresos || 1) : (totalTarjetas || 1);
+                                  const aPct = Math.round(a.mount * 100 / reference);
+                                  const bPct = Math.round(b.mount * 100 / reference);
                                   let diff = 0;
                                   switch (sortState.orderBy) {
                                     case 'nombre':
@@ -679,7 +689,7 @@ export default function Dashboard() {
                                       {pmt.consumo_propio ? <CheckIcon fontSize="small" color="success" /> : <CloseIcon fontSize="small" color="error" />}
                                     </TableCell>
                                     <TableCell align="center">
-                                      {Math.round(pmt.mount*100/totalTarjetas)}%
+                                      {Math.round(pmt.mount * 100 / (porcentajeMode === 'ingresos' ? (totalIngresos || 1) : (totalTarjetas || 1)))}%
                                     </TableCell>
                                     <TableCell align="right" sx={{ whiteSpace: 'nowrap', p: 0.25 }}>
                                       <IconButton size="small" onClick={() => openEditPayment(pmt)}>
@@ -796,7 +806,7 @@ export default function Dashboard() {
               Dashboard
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2, alignItems: 'center' }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -815,6 +825,18 @@ export default function Dashboard() {
               }
               label="Mostrar consumos no propios"
             />
+            <ToggleButtonGroup
+              value={porcentajeMode}
+              exclusive
+              size="small"
+              onChange={(_, value) => {
+                if (value) setPorcentajeMode(value);
+              }}
+              sx={{ ml: 1 }}
+            >
+              <ToggleButton value="consumo">Consumo</ToggleButton>
+              <ToggleButton value="ingresos">Ingresos</ToggleButton>
+            </ToggleButtonGroup>
           </Box>
 
           {/* Info section */}
