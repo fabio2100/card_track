@@ -162,6 +162,38 @@ function buildLineChartOptions(
   };
 }
 
+function buildVariationLineChartOptions(): ChartOptions<'line'> {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        grid: {
+          display: true,
+          color: '#444444',
+        },
+      },
+      y: {
+        grid: {
+          display: true,
+          color: '#444444',
+        },
+        ticks: {
+          callback: (value) => `${Number(value).toLocaleString('en-US')}%`,
+        },
+      },
+    },
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          label: (item) => `${item.dataset.label}: ${Number(item.raw ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`,
+        },
+      },
+    },
+  };
+}
+
 interface Ingreso {
   id: number;
   created_at: string;
@@ -1258,6 +1290,7 @@ export default function Dashboard() {
                         const allDataset = allMonthsData.map((month) => {
                           const total = month.cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
                           const entry: Record<string, number | string> = {
+                            month: month.month,
                             cycleName: month.cycleName ?? month.label,
                             total,
                           };
@@ -1276,6 +1309,44 @@ export default function Dashboard() {
                         }));
                         const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap, allCardColorMap);
                         const allLineChartOptions = buildLineChartOptions(allDataset, null, false);
+                        const variationDataset = allDataset.slice(1).map((entry, index) => {
+                          const previousTotal = Number(allDataset[index].total ?? 0);
+                          const currentTotal = Number(entry.total ?? 0);
+                          return {
+                            label: `${String(allDataset[index].month).slice(5)}-${String(allDataset[index].month).slice(2, 4)} -> ${String(entry.month).slice(5)}-${String(entry.month).slice(2, 4)}`,
+                            variation: previousTotal === 0
+                              ? null
+                              : ((currentTotal - previousTotal) / previousTotal) * 100,
+                          };
+                        });
+                        const variationLineChartData: ChartData<'line'> = {
+                          labels: variationDataset.map((entry) => entry.label),
+                          datasets: [{
+                            label: 'Variación mes a mes',
+                            data: variationDataset.map((entry) => entry.variation),
+                            borderColor: '#f57c00',
+                            backgroundColor: '#f57c00',
+                            tension: 0.25,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            spanGaps: false,
+                            pointBackgroundColor: (context) => {
+                              const variation = Number(context.raw ?? 0);
+                              return variation < 0 ? '#2e7d32' : variation > 0 ? '#d32f2f' : '#757575';
+                            },
+                            pointBorderColor: (context) => {
+                              const variation = Number(context.raw ?? 0);
+                              return variation < 0 ? '#2e7d32' : variation > 0 ? '#d32f2f' : '#757575';
+                            },
+                            segment: {
+                              borderColor: (context) => {
+                                const variation = Number(context.p1.parsed.y ?? 0);
+                                return variation < 0 ? '#2e7d32' : variation > 0 ? '#d32f2f' : '#757575';
+                              },
+                            },
+                          }],
+                        };
+                        const variationLineChartOptions = buildVariationLineChartOptions();
                         return (
                           <Box sx={{ mt: 3, width: '100%', minWidth: 500, overflowX: 'auto' }}>
                             <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
@@ -1305,6 +1376,12 @@ export default function Dashboard() {
                                 margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
                               />
                             )}
+                            <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
+                              Variación mes a mes
+                            </Typography>
+                            <Box sx={{ minWidth: 500, height: 360 }}>
+                              <Line data={variationLineChartData} options={variationLineChartOptions} />
+                            </Box>
                           </Box>
                         );
                       })()}
