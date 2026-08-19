@@ -84,12 +84,16 @@ function buildLineChartData(
     labels: dataset.map((entry) => String(entry.cycleName)),
     datasets: cardIds.map((cardId, index) => ({
       label: cardMap[cardId],
-      data: dataset.map((entry) => Number(entry[`card_${cardId}`] ?? 0)),
+      data: dataset.map((entry) => {
+        const value = Number(entry[`card_${cardId}`] ?? 0);
+        return value === 0 ? null : value;
+      }),
       borderColor: lineChartColors[index % lineChartColors.length],
       backgroundColor: lineChartColors[index % lineChartColors.length],
       tension: 0.25,
       pointRadius: 4,
       pointHoverRadius: 6,
+      spanGaps: false,
     })),
   };
 }
