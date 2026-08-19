@@ -73,23 +73,41 @@ const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend);
 
-const lineChartColors = ['#1976d2', '#ef6c00', '#2e7d32', '#9c27b0', '#00838f', '#c62828'];
+const cardColors = {
+  bnaVisa: '#00a2ff',
+  americanSantander: '#003c70',
+  santanderVisa: '#ec0000',
+  mpMaster: '#c49000',
+  fallback: '#455a64',
+};
+
+function getCardColor(description: string, lastFour?: string): string {
+  const normalized = description.toLowerCase();
+  const suffix = String(lastFour ?? '').trim();
+
+  if (suffix === '8506' || normalized.includes('bna')) return cardColors.bnaVisa;
+  if (suffix === '8745' || normalized.includes('american')) return cardColors.americanSantander;
+  if (suffix === '3577' || normalized.includes('santander')) return cardColors.santanderVisa;
+  if (suffix === '2854' || normalized.includes('mercado') || normalized.includes('master')) return cardColors.mpMaster;
+  return cardColors.fallback;
+}
 
 function buildLineChartData(
   dataset: Record<string, number | string>[],
   cardIds: number[],
   cardMap: Record<number, string>,
+  cardColorMap: Record<number, string>,
 ): ChartData<'line'> {
   return {
     labels: dataset.map((entry) => String(entry.cycleName)),
-    datasets: cardIds.map((cardId, index) => ({
+    datasets: cardIds.map((cardId) => ({
       label: cardMap[cardId],
       data: dataset.map((entry) => {
         const value = Number(entry[`card_${cardId}`] ?? 0);
         return value === 0 ? null : value;
       }),
-      borderColor: lineChartColors[index % lineChartColors.length],
-      backgroundColor: lineChartColors[index % lineChartColors.length],
+      borderColor: cardColorMap[cardId] ?? cardColors.fallback,
+      backgroundColor: cardColorMap[cardId] ?? cardColors.fallback,
       tension: 0.25,
       pointRadius: 4,
       pointHoverRadius: 6,
@@ -579,6 +597,7 @@ export default function Dashboard() {
                           id: c.id,
                           value: Number(c.total_payments),
                           label: c.description,
+                          color: getCardColor(c.description, c.last_four),
                         })),
                         //innerRadius: 30,
                         outerRadius: 70,
@@ -1036,11 +1055,13 @@ export default function Dashboard() {
                       month !== null && month.cards.some((card) => Number(card.total_payments) > 0)
                   );
                   const cardMap: Record<number, string> = {};
+                  const cardColorMap: Record<number, string> = {};
 
                   availableMonths.forEach((month) => {
                     month.cards.forEach((card) => {
                       if (!(card.id in cardMap)) {
                         cardMap[card.id] = card.description;
+                        cardColorMap[card.id] = getCardColor(card.description, card.last_four);
                       }
                     });
                   });
@@ -1079,10 +1100,11 @@ export default function Dashboard() {
                   const series = sortedCardIds.map((cardId) => ({
                     dataKey: `card_${cardId}`,
                     label: cardMap[cardId],
+                    color: cardColorMap[cardId],
                     stack: 'total',
                     valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
                   }));
-                  const lineChartData = buildLineChartData(dataset, sortedCardIds, cardMap);
+                  const lineChartData = buildLineChartData(dataset, sortedCardIds, cardMap, cardColorMap);
                   const lineChartOptions = buildLineChartOptions(dataset, deudaTotal, true);
 
 
@@ -1223,9 +1245,13 @@ export default function Dashboard() {
 
                       {allMonthsData.length > 0 && (() => {
                         const allCardMap: Record<number, string> = {};
+                        const allCardColorMap: Record<number, string> = {};
                         allMonthsData.forEach((month) => {
                           month.cards.forEach((card) => {
-                            if (!(card.id in allCardMap)) allCardMap[card.id] = card.description;
+                            if (!(card.id in allCardMap)) {
+                              allCardMap[card.id] = card.description;
+                              allCardColorMap[card.id] = getCardColor(card.description, card.last_four);
+                            }
                           });
                         });
                         const allSortedCardIds = Object.keys(allCardMap).map(Number).sort((a, b) => a - b);
@@ -1244,10 +1270,11 @@ export default function Dashboard() {
                         const allSeries = allSortedCardIds.map((cardId) => ({
                           dataKey: `card_${cardId}`,
                           label: allCardMap[cardId],
+                          color: allCardColorMap[cardId],
                           stack: 'total',
                           valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
                         }));
-                        const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap);
+                        const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap, allCardColorMap);
                         const allLineChartOptions = buildLineChartOptions(allDataset, null, false);
                         return (
                           <Box sx={{ mt: 3, width: '100%', minWidth: 0, overflow: 'visible' }}>
