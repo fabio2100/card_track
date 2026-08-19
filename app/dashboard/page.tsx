@@ -1189,7 +1189,8 @@ export default function Dashboard() {
                     : lineChartOptions;
 
 
-                  const funnelData = [...dataset]
+                  const funnelDataset = mostrarPagados ? allDataset : dataset;
+                  const funnelData = [...funnelDataset]
                     .map((entry) => {
                       const total = Number(entry.total ?? 0);
                       const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
@@ -1265,7 +1266,7 @@ export default function Dashboard() {
                   return (
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
                       <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
-                        Todos los ciclos
+                        {mostrarPagados ? 'Todos los ciclos' : 'Ciclos a pagar'}
                       </Typography>
                       <Box sx={{ mt: 2, minWidth: 500, height: chartMode === 'lineas' ? 320 : undefined }}>
                         {chartMode === 'lineas' ? (
