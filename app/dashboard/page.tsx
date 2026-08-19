@@ -183,7 +183,8 @@ function buildVariationLineChartOptions(variations: (number | null)[]): ChartOpt
         max: maxVariation,
         grid: {
           display: true,
-          color: '#444444',
+          color: (context) => context.tick?.value === 0 ? '#635100' : '#444444',
+          lineWidth: (context) => context.tick?.value === 0 ? 2 : 1,
         },
         ticks: {
           callback: (value) => `${Number(value).toLocaleString('en-US')}%`,
@@ -1391,9 +1392,38 @@ export default function Dashboard() {
                             <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
                               Variación mes a mes
                             </Typography>
-                            <Box sx={{ minWidth: 500, height: 360 }}>
-                              <Line data={variationLineChartData} options={variationLineChartOptions} />
-                            </Box>
+                            {chartMode === 'lineas' ? (
+                              <Box sx={{ minWidth: 500, height: 360 }}>
+                                <Line data={variationLineChartData} options={variationLineChartOptions} />
+                              </Box>
+                            ) : (
+                              <BarChart
+                                dataset={variationDataset}
+                                xAxis={[{
+                                  scaleType: 'band',
+                                  dataKey: 'label',
+                                }]}
+                                yAxis={[{
+                                  valueFormatter: (value: number) => `${value.toLocaleString('en-US')}%`,
+                                  colorMap: {
+                                    type: 'piecewise',
+                                    thresholds: [0],
+                                    colors: ['#2e7d32', '#d32f2f'],
+                                  },
+                                }]}
+                                series={[{
+                                  dataKey: 'variation',
+                                  label: 'Variación mes a mes',
+                                  valueFormatter: (value: number | null) => value == null
+                                    ? 'Sin datos'
+                                    : `${value.toLocaleString('en-US', { maximumFractionDigits: 2 })}%`,
+                                }]}
+                                grid={{ horizontal: true, vertical: true }}
+                                hideLegend
+                                height={280}
+                                margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
+                              />
+                            )}
                           </Box>
                         );
                       })()}
