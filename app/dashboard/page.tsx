@@ -1182,8 +1182,8 @@ export default function Dashboard() {
                   };
 
                   return (
-                    <Box sx={{ width: '100%', overflowX: chartMode === 'lineas' ? 'visible' : 'auto' }}>
-                      <Box sx={{ mt: 2, minWidth: chartMode === 'lineas' ? 0 : 500, height: chartMode === 'lineas' ? 320 : undefined, overflowX: chartMode === 'lineas' ? 'visible' : 'auto' }}>
+                    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+                      <Box sx={{ mt: 2, minWidth: 500, height: chartMode === 'lineas' ? 320 : undefined }}>
                         {chartMode === 'lineas' ? (
                           <Line data={lineChartData} options={lineChartOptions} />
                         ) : (
@@ -1215,8 +1215,7 @@ export default function Dashboard() {
                       <Box
                         sx={{
                           mt: 3,
-                          minWidth: chartMode === 'lineas' ? 0 : 500,
-                          overflowX: chartMode === 'lineas' ? 'visible' : 'auto',
+                          minWidth: 500,
                           mx: 'auto',
                           p: 2,
 
@@ -1278,12 +1277,12 @@ export default function Dashboard() {
                         const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap, allCardColorMap);
                         const allLineChartOptions = buildLineChartOptions(allDataset, null, false);
                         return (
-                          <Box sx={{ mt: 3, width: '100%', minWidth: 0, overflow: 'visible' }}>
+                          <Box sx={{ mt: 3, width: '100%', minWidth: 500, overflowX: 'auto' }}>
                             <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
                               Todos los ciclos
                             </Typography>
                             {chartMode === 'lineas' ? (
-                              <Box sx={{ width: '100%', height: 360 }}>
+                              <Box sx={{ minWidth: 500, height: 360 }}>
                                 <Line data={allLineChartData} options={allLineChartOptions} />
                               </Box>
                             ) : (
