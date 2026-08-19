@@ -31,12 +31,14 @@ export async function GET(request: Request) {
         FROM payments
         WHERE created_at >= CURRENT_DATE - INTERVAL '365 days'
           AND created_at < CURRENT_DATE + INTERVAL '1 day'
+          ${!mostrarConsumosPropios ? 'AND consumo_propio = true' : ''}
       `),
       query(`
         SELECT COALESCE(SUM(mount), 0) AS total_gastado_ultimos_tres_meses
         FROM payments
         WHERE created_at >= CURRENT_DATE - INTERVAL '90 days'
           AND created_at < CURRENT_DATE + INTERVAL '1 day'
+          ${!mostrarConsumosPropios ? 'AND consumo_propio = true' : ''}
       `),
     ]);
 
