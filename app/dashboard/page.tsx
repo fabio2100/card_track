@@ -157,6 +157,8 @@ export default function Dashboard() {
   // Global info
   const [deudaTotal, setDeudaTotal] = useState<number | null>(null);
   const [deudaEnSueldos, setDeudaEnSueldos] = useState<number | null>(null);
+  const [totalGastadoUltimoAno, setTotalGastadoUltimoAno] = useState<number | null>(null);
+  const [totalGastadoUltimosTresMeses, setTotalGastadoUltimosTresMeses] = useState<number | null>(null);
   const [infoLoading, setInfoLoading] = useState(true);
 
   // All cycles data (no filters)
@@ -209,6 +211,8 @@ export default function Dashboard() {
       if (infoRes.success) {
         setDeudaTotal(infoRes.deudaTotal);
         setDeudaEnSueldos(infoRes.deudaEnSueldos);
+        setTotalGastadoUltimoAno(infoRes.totalGastadoUltimoAno);
+        setTotalGastadoUltimosTresMeses(infoRes.totalGastadoUltimosTresMeses);
       }
       setInfoLoading(false);
       setMonthsData(
@@ -882,7 +886,7 @@ export default function Dashboard() {
               borderRadius: 2,
             }}
           >
-            <Typography variant="h6" component="h2" sx={{ mb: 1.5 }}>
+            <Typography variant="h5" component="h2" sx={{ mb: 1.5 }}>
               Info
             </Typography>
             <Divider sx={{ mb: 1.5 }} />
@@ -903,6 +907,18 @@ export default function Dashboard() {
                   Deuda como cantidad de sueldos:{' '}
                   <strong>
                     {deudaEnSueldos !== null ? <AnimatedNumber value={deudaEnSueldos} format={(v) => (Math.round(v * 100) / 100).toLocaleString('en-US')} /> : '—'}
+                  </strong>
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5 }}>
+                  Total gastado último año:{' '}
+                  <strong>
+                    $<AnimatedNumber value={totalGastadoUltimoAno ?? 0} />
+                  </strong>
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 0.5 }}>
+                  Total gastado últimos 3 meses:{' '}
+                  <strong>
+                    $<AnimatedNumber value={totalGastadoUltimosTresMeses ?? 0} />
                   </strong>
                 </Typography>
                 {deudaEnSueldos !== null && (
@@ -1079,7 +1095,7 @@ export default function Dashboard() {
 
                         }}
                       >
-                        <Typography variant="body1" sx={{ mt: 0.5, color: 'white' }}>
+                        <Typography variant="h6" sx={{ mt: 0.5, color: 'white' }}>
                           Distribución porcentual por ciclo
                         </Typography>
                         <Box sx={{ mt: 2 }}>
@@ -1129,7 +1145,7 @@ export default function Dashboard() {
                         }));
                         return (
                           <Box sx={{ mt: 3, minWidth: 500, overflowX: 'auto' }}>
-                            <Typography variant="body1" sx={{ mt: 0.5, mb: 1 }}>
+                            <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
                               Todos los ciclos
                             </Typography>
                             <BarChart
