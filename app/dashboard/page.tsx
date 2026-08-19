@@ -128,14 +128,14 @@ function buildLineChartOptions(
       x: {
         grid: {
           display: true,
-          color: 'rgba(0, 0, 0, 0.12)',
+          color: '#444444',
         },
       },
       y: {
         beginAtZero: true,
         grid: {
           display: true,
-          color: 'rgba(0, 0, 0, 0.12)',
+          color: '#444444',
         },
         ticks: {
           callback: (value) => `$${Number(value).toLocaleString('en-US')}`,
@@ -1205,6 +1205,7 @@ export default function Dashboard() {
                             }]}
                             yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
                             series={series}
+                            grid={{ horizontal: true, vertical: true }}
                             height={280}
                             margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
                           />
@@ -1300,6 +1301,7 @@ export default function Dashboard() {
                                 }]}
                                 yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
                                 series={allSeries}
+                                grid={{ horizontal: true, vertical: true }}
                                 height={280}
                                 margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
                               />
