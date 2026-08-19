@@ -38,10 +38,19 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
-  Tab,
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
-import { BarChart } from '@mui/x-charts/BarChart';
+import { Bar } from 'react-chartjs-2';
+import {
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+} from 'chart.js';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -58,6 +67,64 @@ import type { ApexOptions } from 'apexcharts';
 import dayjs, { Dayjs } from 'dayjs';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
+const barChartColors = ['#1976d2', '#ef6c00', '#2e7d32', '#9c27b0', '#00838f', '#c62828'];
+
+function buildStackedBarData(
+  dataset: Record<string, number | string>[],
+  cardIds: number[],
+  cardMap: Record<number, string>,
+): ChartData<'bar'> {
+  return {
+    labels: dataset.map((entry) => String(entry.cycleName)),
+    datasets: cardIds.map((cardId, index) => ({
+      label: cardMap[cardId],
+      data: dataset.map((entry) => Number(entry[`card_${cardId}`] ?? 0)),
+      backgroundColor: barChartColors[index % barChartColors.length],
+      stack: 'total',
+    })),
+  };
+}
+
+function buildStackedBarOptions(
+  dataset: Record<string, number | string>[],
+  deudaTotal: number | null,
+  includePercentage: boolean,
+): ChartOptions<'bar'> {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { stacked: true },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => `$${Number(value).toLocaleString('en-US')}`,
+        },
+      },
+    },
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: {
+        callbacks: {
+          title: (items) => {
+            const index = items[0]?.dataIndex ?? 0;
+            const entry = dataset[index];
+            const total = Number(entry?.total ?? 0);
+            const percentage = deudaTotal != null && deudaTotal > 0
+              ? ` (${Math.round((total / deudaTotal) * 100)}%)`
+              : '';
+            return `${String(entry?.cycleName ?? '')} : $${total.toLocaleString('en-US')}${includePercentage ? percentage : ''}`;
+          },
+          label: (item) => `${item.dataset.label}: $${Number(item.raw ?? 0).toLocaleString('en-US')}`,
+        },
+      },
+    },
+  };
+}
 
 interface Ingreso {
   id: number;
@@ -977,12 +1044,8 @@ export default function Dashboard() {
                     return entry;
                   });
 
-                  const series = sortedCardIds.map((cardId) => ({
-                    dataKey: `card_${cardId}`,
-                    label: cardMap[cardId],
-                    stack: 'total',
-                    valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
-                  }));
+                  const chartData = buildStackedBarData(dataset, sortedCardIds, cardMap);
+                  const chartOptions = buildStackedBarOptions(dataset, deudaTotal, true);
 
 
                   const funnelData = [...dataset]
@@ -1060,29 +1123,8 @@ export default function Dashboard() {
 
                   return (
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
-                      <Box sx={{ mt: 2, minWidth: 500, overflowX: 'auto' }}>
-                        <BarChart
-                          dataset={dataset}
-                          xAxis={[{
-                            scaleType: 'band',
-                            dataKey: 'cycleName',
-                            valueFormatter: (value, context) => {
-                              if (context.location !== 'tooltip') {
-                                return String(value);
-                              }
-
-                              const item = dataset.find((entry) => entry.cycleName === value);
-                              const total = Number(item?.total ?? 0);
-                              const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
-                              return `${String(value)} : $${total.toLocaleString('en-US')} (${pct}%)`;
-                            },
-                          }]}
-                          yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
-                          series={series}
-                          height={280}
-                          
-                          margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
-                        />
+                      <Box sx={{ mt: 2, minWidth: 500, height: 280, overflowX: 'auto' }}>
+                        <Bar data={chartData} options={chartOptions} />
                       </Box>
 
                       <Box
@@ -1137,34 +1179,14 @@ export default function Dashboard() {
                           });
                           return entry;
                         });
-                        const allSeries = allSortedCardIds.map((cardId) => ({
-                          dataKey: `card_${cardId}`,
-                          label: allCardMap[cardId],
-                          stack: 'total',
-                          valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
-                        }));
+                        const allChartData = buildStackedBarData(allDataset, allSortedCardIds, allCardMap);
+                        const allChartOptions = buildStackedBarOptions(allDataset, null, false);
                         return (
-                          <Box sx={{ mt: 3, minWidth: 500, overflowX: 'auto' }}>
+                          <Box sx={{ mt: 3, minWidth: 500, height: 320, overflowX: 'auto' }}>
                             <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
                               Todos los ciclos
                             </Typography>
-                            <BarChart
-                              dataset={allDataset}
-                              xAxis={[{
-                                scaleType: 'band',
-                                dataKey: 'cycleName',
-                                valueFormatter: (value, context) => {
-                                  if (context.location !== 'tooltip') return String(value);
-                                  const item = allDataset.find((e) => e.cycleName === value);
-                                  const total = Number(item?.total ?? 0);
-                                  return `${String(value)} : $${total.toLocaleString('en-US')}`;
-                                },
-                              }]}
-                              yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
-                              series={allSeries}
-                              height={280}
-                              margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
-                            />
+                            <Bar data={allChartData} options={allChartOptions} />
                           </Box>
                         );
                       })()}
