@@ -162,7 +162,12 @@ function buildLineChartOptions(
   };
 }
 
-function buildVariationLineChartOptions(): ChartOptions<'line'> {
+function buildVariationLineChartOptions(variations: (number | null)[]): ChartOptions<'line'> {
+  const maxVariation = Math.max(
+    1,
+    ...variations.map((variation) => Math.abs(variation ?? 0))
+  );
+
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -174,6 +179,8 @@ function buildVariationLineChartOptions(): ChartOptions<'line'> {
         },
       },
       y: {
+        min: -maxVariation,
+        max: maxVariation,
         grid: {
           display: true,
           color: '#444444',
@@ -184,7 +191,7 @@ function buildVariationLineChartOptions(): ChartOptions<'line'> {
       },
     },
     plugins: {
-      legend: { position: 'bottom' },
+      legend: { display: false },
       tooltip: {
         callbacks: {
           label: (item) => `${item.dataset.label}: ${Number(item.raw ?? 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`,
@@ -1309,11 +1316,14 @@ export default function Dashboard() {
                         }));
                         const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap, allCardColorMap);
                         const allLineChartOptions = buildLineChartOptions(allDataset, null, false);
-                        const variationDataset = allDataset.slice(1).map((entry, index) => {
-                          const previousTotal = Number(allDataset[index].total ?? 0);
+                        const variationMonths = allDataset.filter(
+                          (entry) => String(entry.month) <= dayjs().add(1, 'month').format('YYYY-MM')
+                        );
+                        const variationDataset = variationMonths.slice(1).map((entry, index) => {
+                          const previousTotal = Number(variationMonths[index].total ?? 0);
                           const currentTotal = Number(entry.total ?? 0);
                           return {
-                            label: `${String(allDataset[index].month).slice(5)}-${String(allDataset[index].month).slice(2, 4)} -> ${String(entry.month).slice(5)}-${String(entry.month).slice(2, 4)}`,
+                            label: `${String(variationMonths[index].month).slice(5)}-${String(variationMonths[index].month).slice(2, 4)} -> ${String(entry.month).slice(5)}-${String(entry.month).slice(2, 4)}`,
                             variation: previousTotal === 0
                               ? null
                               : ((currentTotal - previousTotal) / previousTotal) * 100,
@@ -1346,7 +1356,9 @@ export default function Dashboard() {
                             },
                           }],
                         };
-                        const variationLineChartOptions = buildVariationLineChartOptions();
+                        const variationLineChartOptions = buildVariationLineChartOptions(
+                          variationDataset.map((entry) => entry.variation)
+                        );
                         return (
                           <Box sx={{ mt: 3, width: '100%', minWidth: 500, overflowX: 'auto' }}>
                             <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
