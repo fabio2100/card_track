@@ -38,15 +38,18 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  Tab,
 } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
-import { Bar } from 'react-chartjs-2';
+import { BarChart } from '@mui/x-charts/BarChart';
+import { Line } from 'react-chartjs-2';
 import {
-  BarElement,
   CategoryScale,
   Chart as ChartJS,
   Legend,
   LinearScale,
+  LineElement,
+  PointElement,
   Tooltip,
   type ChartData,
   type ChartOptions,
@@ -68,39 +71,50 @@ import dayjs, { Dayjs } from 'dayjs';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend);
 
-const barChartColors = ['#1976d2', '#ef6c00', '#2e7d32', '#9c27b0', '#00838f', '#c62828'];
+const lineChartColors = ['#1976d2', '#ef6c00', '#2e7d32', '#9c27b0', '#00838f', '#c62828'];
 
-function buildStackedBarData(
+function buildLineChartData(
   dataset: Record<string, number | string>[],
   cardIds: number[],
   cardMap: Record<number, string>,
-): ChartData<'bar'> {
+): ChartData<'line'> {
   return {
     labels: dataset.map((entry) => String(entry.cycleName)),
     datasets: cardIds.map((cardId, index) => ({
       label: cardMap[cardId],
       data: dataset.map((entry) => Number(entry[`card_${cardId}`] ?? 0)),
-      backgroundColor: barChartColors[index % barChartColors.length],
-      stack: 'total',
+      borderColor: lineChartColors[index % lineChartColors.length],
+      backgroundColor: lineChartColors[index % lineChartColors.length],
+      tension: 0.25,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     })),
   };
 }
 
-function buildStackedBarOptions(
+function buildLineChartOptions(
   dataset: Record<string, number | string>[],
   deudaTotal: number | null,
   includePercentage: boolean,
-): ChartOptions<'bar'> {
+): ChartOptions<'line'> {
   return {
     responsive: true,
     maintainAspectRatio: false,
     scales: {
-      x: { stacked: true },
+      x: {
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.12)',
+        },
+      },
       y: {
-        stacked: true,
         beginAtZero: true,
+        grid: {
+          display: true,
+          color: 'rgba(0, 0, 0, 0.12)',
+        },
         ticks: {
           callback: (value) => `$${Number(value).toLocaleString('en-US')}`,
         },
@@ -219,6 +233,7 @@ export default function Dashboard() {
   const [mostrarPagados, setMostrarPagados] = useState(false);
   const [mostrarConsumosPropios, setMostrarConsumosPropios] = useState(true);
   const [porcentajeMode, setPorcentajeMode] = useState<'consumo' | 'ingresos'>('consumo');
+  const [chartMode, setChartMode] = useState<'barras' | 'lineas'>('barras');
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
 
   // Global info
@@ -939,6 +954,18 @@ export default function Dashboard() {
                   <ToggleButton value="consumo">Consumo</ToggleButton>
                   <ToggleButton value="ingresos">Ingresos</ToggleButton>
                 </ToggleButtonGroup>
+                <ToggleButtonGroup
+                  value={chartMode}
+                  exclusive
+                  size="small"
+                  onChange={(_, value) => {
+                    if (value) setChartMode(value);
+                  }}
+                  sx={{ ml: 1 }}
+                >
+                  <ToggleButton value="barras">Barras</ToggleButton>
+                  <ToggleButton value="lineas">Líneas</ToggleButton>
+                </ToggleButtonGroup>
               </>
             )}
           </Box>
@@ -976,6 +1003,16 @@ export default function Dashboard() {
                     {deudaEnSueldos !== null ? <AnimatedNumber value={deudaEnSueldos} format={(v) => (Math.round(v * 100) / 100).toLocaleString('en-US')} /> : '—'}
                   </strong>
                 </Typography>
+                {deudaEnSueldos !== null && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                    <LinearProgress
+                      variant="determinate"
+                      color={deudaEnSueldos < 0.5 ? 'success' : deudaEnSueldos <= 1 ? 'warning' : 'error'}
+                      value={Math.min(deudaEnSueldos * 100, 100)}
+                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                    />
+                  </Box>
+                )}
                 <Typography variant="body1" sx={{ mt: 0.5 }}>
                   Total gastado último año:{' '}
                   <strong>
@@ -988,16 +1025,7 @@ export default function Dashboard() {
                     $<AnimatedNumber value={totalGastadoUltimosTresMeses ?? 0} />
                   </strong>
                 </Typography>
-                {deudaEnSueldos !== null && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                    <LinearProgress
-                      variant="determinate"
-                      color={deudaEnSueldos < 0.5 ? 'success' : deudaEnSueldos <= 1 ? 'warning' : 'error'}
-                      value={Math.min(deudaEnSueldos * 100, 100)}
-                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
-                    />
-                  </Box>
-                )}
+                
                 {!loading && (() => {
                   const availableMonths = monthsData.filter(
                     (month): month is MonthData =>
@@ -1044,8 +1072,14 @@ export default function Dashboard() {
                     return entry;
                   });
 
-                  const chartData = buildStackedBarData(dataset, sortedCardIds, cardMap);
-                  const chartOptions = buildStackedBarOptions(dataset, deudaTotal, true);
+                  const series = sortedCardIds.map((cardId) => ({
+                    dataKey: `card_${cardId}`,
+                    label: cardMap[cardId],
+                    stack: 'total',
+                    valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
+                  }));
+                  const lineChartData = buildLineChartData(dataset, sortedCardIds, cardMap);
+                  const lineChartOptions = buildLineChartOptions(dataset, deudaTotal, true);
 
 
                   const funnelData = [...dataset]
@@ -1122,16 +1156,40 @@ export default function Dashboard() {
                   };
 
                   return (
-                    <Box sx={{ width: '100%', overflowX: 'auto' }}>
-                      <Box sx={{ mt: 2, minWidth: 500, height: 280, overflowX: 'auto' }}>
-                        <Bar data={chartData} options={chartOptions} />
+                    <Box sx={{ width: '100%', overflowX: chartMode === 'lineas' ? 'visible' : 'auto' }}>
+                      <Box sx={{ mt: 2, minWidth: chartMode === 'lineas' ? 0 : 500, height: chartMode === 'lineas' ? 320 : undefined, overflowX: chartMode === 'lineas' ? 'visible' : 'auto' }}>
+                        {chartMode === 'lineas' ? (
+                          <Line data={lineChartData} options={lineChartOptions} />
+                        ) : (
+                          <BarChart
+                            dataset={dataset}
+                            xAxis={[{
+                              scaleType: 'band',
+                              dataKey: 'cycleName',
+                              valueFormatter: (value, context) => {
+                                if (context.location !== 'tooltip') {
+                                  return String(value);
+                                }
+
+                                const item = dataset.find((entry) => entry.cycleName === value);
+                                const total = Number(item?.total ?? 0);
+                                const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
+                                return `${String(value)} : $${total.toLocaleString('en-US')} (${pct}%)`;
+                              },
+                            }]}
+                            yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
+                            series={series}
+                            height={280}
+                            margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
+                          />
+                        )}
                       </Box>
 
                       <Box
                         sx={{
                           mt: 3,
-                          minWidth: 500,
-                          overflowX: 'auto',
+                          minWidth: chartMode === 'lineas' ? 0 : 500,
+                          overflowX: chartMode === 'lineas' ? 'visible' : 'auto',
                           mx: 'auto',
                           p: 2,
 
@@ -1179,14 +1237,42 @@ export default function Dashboard() {
                           });
                           return entry;
                         });
-                        const allChartData = buildStackedBarData(allDataset, allSortedCardIds, allCardMap);
-                        const allChartOptions = buildStackedBarOptions(allDataset, null, false);
+                        const allSeries = allSortedCardIds.map((cardId) => ({
+                          dataKey: `card_${cardId}`,
+                          label: allCardMap[cardId],
+                          stack: 'total',
+                          valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
+                        }));
+                        const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap);
+                        const allLineChartOptions = buildLineChartOptions(allDataset, null, false);
                         return (
-                          <Box sx={{ mt: 3, minWidth: 500, height: 320, overflowX: 'auto' }}>
+                          <Box sx={{ mt: 3, width: '100%', minWidth: 0, overflow: 'visible' }}>
                             <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
                               Todos los ciclos
                             </Typography>
-                            <Bar data={allChartData} options={allChartOptions} />
+                            {chartMode === 'lineas' ? (
+                              <Box sx={{ width: '100%', height: 360 }}>
+                                <Line data={allLineChartData} options={allLineChartOptions} />
+                              </Box>
+                            ) : (
+                              <BarChart
+                                dataset={allDataset}
+                                xAxis={[{
+                                  scaleType: 'band',
+                                  dataKey: 'cycleName',
+                                  valueFormatter: (value, context) => {
+                                    if (context.location !== 'tooltip') return String(value);
+                                    const item = allDataset.find((e) => e.cycleName === value);
+                                    const total = Number(item?.total ?? 0);
+                                    return `${String(value)} : $${total.toLocaleString('en-US')}`;
+                                  },
+                                }]}
+                                yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
+                                series={allSeries}
+                                height={280}
+                                margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
+                              />
+                            )}
                           </Box>
                         );
                       })()}
