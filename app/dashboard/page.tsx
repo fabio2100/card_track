@@ -1120,6 +1120,7 @@ export default function Dashboard() {
                       0
                     );
                     const entry: Record<string, number | string> = {
+                      month: month.month,
                       cycleName: month.cycleName ?? month.label,
                       total,
                     };
@@ -1146,6 +1147,46 @@ export default function Dashboard() {
                   }));
                   const lineChartData = buildLineChartData(dataset, sortedCardIds, cardMap, cardColorMap);
                   const lineChartOptions = buildLineChartOptions(dataset, deudaTotal, true);
+
+                  const allCardMap: Record<number, string> = {};
+                  const allCardColorMap: Record<number, string> = {};
+                  allMonthsData.forEach((month) => {
+                    month.cards.forEach((card) => {
+                      if (!(card.id in allCardMap)) {
+                        allCardMap[card.id] = card.description;
+                        allCardColorMap[card.id] = getCardColor(card.description, card.last_four);
+                      }
+                    });
+                  });
+                  const allSortedCardIds = Object.keys(allCardMap).map(Number).sort((a, b) => a - b);
+                  const allDataset = allMonthsData.map((month) => {
+                    const total = month.cards.reduce((sum, card) => sum + Number(card.total_payments), 0);
+                    const entry: Record<string, number | string> = {
+                      month: month.month,
+                      cycleName: month.cycleName ?? month.label,
+                      total,
+                    };
+                    month.cards.forEach((card) => { entry[`card_${card.id}`] = Number(card.total_payments); });
+                    allSortedCardIds.forEach((cardId) => {
+                      if (!(`card_${cardId}` in entry)) entry[`card_${cardId}`] = 0;
+                    });
+                    return entry;
+                  });
+                  const allSeries = allSortedCardIds.map((cardId) => ({
+                    dataKey: `card_${cardId}`,
+                    label: allCardMap[cardId],
+                    color: allCardColorMap[cardId],
+                    stack: 'total',
+                    valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
+                  }));
+                  const chartDataset = mostrarPagados ? allDataset : dataset;
+                  const chartSeries = mostrarPagados ? allSeries : series;
+                  const chartLineData = mostrarPagados
+                    ? buildLineChartData(allDataset, allSortedCardIds, allCardMap, allCardColorMap)
+                    : lineChartData;
+                  const chartLineOptions = mostrarPagados
+                    ? buildLineChartOptions(allDataset, null, false)
+                    : lineChartOptions;
 
 
                   const funnelData = [...dataset]
@@ -1223,12 +1264,15 @@ export default function Dashboard() {
 
                   return (
                     <Box sx={{ width: '100%', overflowX: 'auto' }}>
+                      <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
+                        Todos los ciclos
+                      </Typography>
                       <Box sx={{ mt: 2, minWidth: 500, height: chartMode === 'lineas' ? 320 : undefined }}>
                         {chartMode === 'lineas' ? (
-                          <Line data={lineChartData} options={lineChartOptions} />
+                          <Line data={chartLineData} options={chartLineOptions} />
                         ) : (
                           <BarChart
-                            dataset={dataset}
+                            dataset={chartDataset}
                             xAxis={[{
                               scaleType: 'band',
                               dataKey: 'cycleName',
@@ -1237,14 +1281,14 @@ export default function Dashboard() {
                                   return String(value);
                                 }
 
-                                const item = dataset.find((entry) => entry.cycleName === value);
+                                const item = chartDataset.find((entry) => entry.cycleName === value);
                                 const total = Number(item?.total ?? 0);
                                 const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
                                 return `${String(value)} : $${total.toLocaleString('en-US')} (${pct}%)`;
                               },
                             }]}
                             yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
-                            series={series}
+                            series={chartSeries}
                             grid={{ horizontal: true, vertical: true }}
                             height={280}
                             margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
@@ -1284,39 +1328,6 @@ export default function Dashboard() {
                       </Box>
 
                       {allMonthsData.length > 0 && (() => {
-                        const allCardMap: Record<number, string> = {};
-                        const allCardColorMap: Record<number, string> = {};
-                        allMonthsData.forEach((month) => {
-                          month.cards.forEach((card) => {
-                            if (!(card.id in allCardMap)) {
-                              allCardMap[card.id] = card.description;
-                              allCardColorMap[card.id] = getCardColor(card.description, card.last_four);
-                            }
-                          });
-                        });
-                        const allSortedCardIds = Object.keys(allCardMap).map(Number).sort((a, b) => a - b);
-                        const allDataset = allMonthsData.map((month) => {
-                          const total = month.cards.reduce((sum, c) => sum + Number(c.total_payments), 0);
-                          const entry: Record<string, number | string> = {
-                            month: month.month,
-                            cycleName: month.cycleName ?? month.label,
-                            total,
-                          };
-                          month.cards.forEach((card) => { entry[`card_${card.id}`] = Number(card.total_payments); });
-                          allSortedCardIds.forEach((cardId) => {
-                            if (!(`card_${cardId}` in entry)) entry[`card_${cardId}`] = 0;
-                          });
-                          return entry;
-                        });
-                        const allSeries = allSortedCardIds.map((cardId) => ({
-                          dataKey: `card_${cardId}`,
-                          label: allCardMap[cardId],
-                          color: allCardColorMap[cardId],
-                          stack: 'total',
-                          valueFormatter: (value: number | null) => `$${(value ?? 0).toLocaleString('en-US')}`,
-                        }));
-                        const allLineChartData = buildLineChartData(allDataset, allSortedCardIds, allCardMap, allCardColorMap);
-                        const allLineChartOptions = buildLineChartOptions(allDataset, null, false);
                         const variationMonths = allDataset.filter(
                           (entry) => String(entry.month) <= dayjs().add(1, 'month').format('YYYY-MM')
                         );
@@ -1362,33 +1373,6 @@ export default function Dashboard() {
                         );
                         return (
                           <Box sx={{ mt: 3, width: '100%', minWidth: 500, overflowX: 'auto' }}>
-                            <Typography variant="h6" sx={{ mt: 0.5, mb: 1 }}>
-                              Todos los ciclos
-                            </Typography>
-                            {chartMode === 'lineas' ? (
-                              <Box sx={{ minWidth: 500, height: 360 }}>
-                                <Line data={allLineChartData} options={allLineChartOptions} />
-                              </Box>
-                            ) : (
-                              <BarChart
-                                dataset={allDataset}
-                                xAxis={[{
-                                  scaleType: 'band',
-                                  dataKey: 'cycleName',
-                                  valueFormatter: (value, context) => {
-                                    if (context.location !== 'tooltip') return String(value);
-                                    const item = allDataset.find((e) => e.cycleName === value);
-                                    const total = Number(item?.total ?? 0);
-                                    return `${String(value)} : $${total.toLocaleString('en-US')}`;
-                                  },
-                                }]}
-                                yAxis={[{ valueFormatter: (value: number) => `$${value.toLocaleString('en-US')}` }]}
-                                series={allSeries}
-                                grid={{ horizontal: true, vertical: true }}
-                                height={280}
-                                margin={{ top: 16, right: 16, bottom: 48, left: 0 }}
-                              />
-                            )}
                             <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
                               Variación mes a mes
                             </Typography>
