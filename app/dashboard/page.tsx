@@ -1188,12 +1188,15 @@ export default function Dashboard() {
                     ? buildLineChartOptions(allDataset, null, false)
                     : lineChartOptions;
 
-
                   const funnelDataset = mostrarPagados ? allDataset : dataset;
+                  const totalGastadoGrafico = funnelDataset.reduce(
+                    (sum, entry) => sum + Number(entry.total ?? 0),
+                    0
+                  );
                   const funnelData = [...funnelDataset]
                     .map((entry) => {
                       const total = Number(entry.total ?? 0);
-                      const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
+                      const pct = totalGastadoGrafico > 0 ? Math.round((total / totalGastadoGrafico) * 100) : 0;
                       return { label: String(entry.cycleName), pct };
                     })
 
@@ -1284,7 +1287,7 @@ export default function Dashboard() {
 
                                 const item = chartDataset.find((entry) => entry.cycleName === value);
                                 const total = Number(item?.total ?? 0);
-                                const pct = deudaTotal != null && deudaTotal > 0 ? Math.round((total / deudaTotal) * 100) : 0;
+                                const pct = totalGastadoGrafico > 0 ? Math.round((total / totalGastadoGrafico) * 100) : 0;
                                 return `${String(value)} : $${total.toLocaleString('en-US')} (${pct}%)`;
                               },
                             }]}
