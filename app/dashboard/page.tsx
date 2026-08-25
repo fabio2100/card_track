@@ -628,7 +628,12 @@ export default function Dashboard() {
                       variant="determinate"
                       color={pctColor as 'success' | 'warning' | 'error'}
                       value={Math.min((pct / 50) * 100, 100)}
-                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                      sx={{
+                        flex: 1,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: alpha('#818181', 0.2),
+                      }}
                     />
                   </Box>
                   <Box sx={{ mt: 1 }}>
@@ -1096,7 +1101,12 @@ export default function Dashboard() {
                       variant="determinate"
                       color={deudaEnSueldos < 0.5 ? 'success' : deudaEnSueldos <= 1 ? 'warning' : 'error'}
                       value={Math.min(deudaEnSueldos * 100, 100)}
-                      sx={{ flex: 1, height: 10, borderRadius: 5 }}
+                      sx={{
+                        flex: 1,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: alpha('#818181', 0.2),
+                      }}
                     />
                   </Box>
                 )}
