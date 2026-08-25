@@ -726,8 +726,26 @@ export default function Dashboard() {
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
+                        
                       </Box>
-                      
+                          {card.start_date && card.end_date && !dayjs(card.start_date).isAfter(dayjs(), 'day') && !dayjs(card.end_date).isBefore(dayjs(), 'day') && dayjs(card.end_date).diff(dayjs(), 'day') < 31 && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                color="warning"
+                                value={(Math.min(Math.max(dayjs(card.end_date).diff(dayjs(), 'day'), 1), 30) / 29) * 100}
+                                aria-label="Días hasta el vencimiento"
+                                aria-valuemin={1}
+                                aria-valuemax={30}
+                                aria-valuenow={Math.min(Math.max(dayjs(card.end_date).diff(dayjs(), 'day'), 1), 30)}
+                                aria-valuetext={String(dayjs(card.end_date).diff(dayjs(), 'day'))}
+                                sx={{ flex: 1, height: 8, borderRadius: 4 }}
+                              />
+                              <Typography variant="caption" color="text.secondary">
+                                {dayjs(card.end_date).diff(dayjs(), 'day')} d
+                              </Typography>
+                            </Box>
+                          )}
                       <Divider sx={{ my: 1 }} />
                       {card.payments.length > 0 && (
                         <Accordion
