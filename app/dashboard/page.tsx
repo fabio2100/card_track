@@ -57,6 +57,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { alpha } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -739,7 +740,12 @@ export default function Dashboard() {
                                 aria-valuemax={30}
                                 aria-valuenow={Math.min(Math.max(dayjs(card.end_date).diff(dayjs(), 'day'), 1), 30)}
                                 aria-valuetext={String(dayjs(card.end_date).diff(dayjs(), 'day'))}
-                                sx={{ flex: 1, height: 8, borderRadius: 4 }}
+                                sx={{
+                                  flex: 1,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  backgroundColor: alpha('#000000', 0.3),
+                                }}
                               />
                               <Typography variant="caption" color="text.secondary">
                                 {dayjs(card.end_date).diff(dayjs(), 'day')} d
