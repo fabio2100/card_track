@@ -734,7 +734,7 @@ export default function Dashboard() {
                         </IconButton>
                         
                       </Box>
-                          {card.start_date && card.end_date && !dayjs(card.start_date).isAfter(dayjs(), 'day') && !dayjs(card.end_date).isBefore(dayjs(), 'day') && (
+                          {card.start_date && card.end_date && !dayjs(card.start_date).isAfter(dayjs(), 'day') && !dayjs(card.end_date).isBefore(dayjs(), 'day') && dayjs(card.end_date).diff(dayjs(), 'day') > 0 && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                               <LinearProgress
                                 variant="determinate"
