@@ -636,6 +636,32 @@ export default function Dashboard() {
                       }}
                     />
                   </Box>
+                  {(() => {
+                    const santanderCard = cards.find((c) => String(c.last_four).trim() === '3577');
+                    if (!santanderCard?.end_date) return null;
+                    const daysLeft = dayjs(santanderCard.end_date).diff(dayjs(), 'day');
+                    if (daysLeft < 0 || daysLeft >= 50) return null;
+                    const clampedDays = Math.min(Math.max(daysLeft, 0), 45);
+                    const diasColor = clampedDays <= 10 ? 'error' : clampedDays <= 25 ? 'warning' : 'success';
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          color={diasColor}
+                          value={(clampedDays / 45) * 100}
+                          sx={{
+                            flex: 1,
+                            height: 10,
+                            borderRadius: 5,
+                            backgroundColor: alpha('#818181', 0.2),
+                          }}
+                        />
+                        <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                          {daysLeft}d
+                        </Typography>
+                      </Box>
+                    );
+                  })()}
                   <Box sx={{ mt: 1 }}>
                     <PieChart
                       series={[{
